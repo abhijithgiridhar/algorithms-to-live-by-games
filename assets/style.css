@@ -353,6 +353,32 @@ hr.divider {
 .results-row .row-name { text-align: left; }
 .results-row .row-score { font-weight: 700; }
 
+.lock-panel {
+  text-align: center;
+}
+
+.lock-panel .lock-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+input.password-input {
+  font: inherit;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  max-width: 200px;
+  text-align: center;
+}
+
+.lock-error {
+  color: var(--bad);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
 footer.site-foot {
   text-align: center;
   color: var(--muted);

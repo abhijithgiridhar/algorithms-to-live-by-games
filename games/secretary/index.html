@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Great Rishta Hunt — Algorithms to Live By</title>
+<title>Hire the Perfect Secretary — Algorithms to Live By</title>
 <link rel="stylesheet" href="../../assets/style.css">
 </head>
 <body>
@@ -11,33 +11,33 @@
   <a class="back-link" href="../../index.html">&larr; All games</a>
 
   <header class="page-head">
-    <h1>💍 The Great Rishta Hunt</h1>
-    <p>You're the matchmaker. Your client will meet 10 people, one at a time, in a random order.</p>
-    <p>You must decide <strong>right after each date</strong> — propose or move on. No going back!</p>
+    <h1>📋 Hire the Perfect Secretary</h1>
+    <p>You're hiring for the office. 10 applicants will interview, one at a time, in a random order.</p>
+    <p>You must decide <strong>right after each interview</strong> — hire or pass. No going back!</p>
   </header>
 
-  <p class="date-counter" id="dateCounter">Date 1 of 10</p>
+  <p class="date-counter" id="dateCounter">Applicant 1 of 10</p>
 
   <div class="candidate-card" id="candidateCard">
     <div class="name" id="candName">—</div>
     <div class="bio" id="candBio">—</div>
-    <div class="score-label">Compatibility score</div>
+    <div class="score-label">Interview score</div>
     <div class="score" id="candScore">—</div>
   </div>
 
   <div class="history-strip" id="historyStrip"></div>
 
   <div class="controls" id="decisionControls">
-    <button class="btn" id="proposeBtn">💍 Propose!</button>
-    <button class="btn secondary" id="nextBtn">👋 See the next person</button>
+    <button class="btn" id="proposeBtn">📋 Hire!</button>
+    <button class="btn secondary" id="nextBtn">👋 See the next applicant</button>
   </div>
-  <p class="date-counter" id="lastChanceNote" style="display:none">This is the last one — no more dates left. Time to decide!</p>
+  <p class="date-counter" id="lastChanceNote" style="display:none">This is the last applicant — no one left. Time to decide!</p>
 
   <div id="resultBanner"></div>
   <ul class="results-list" id="resultsList"></ul>
 
   <div class="controls" id="playAgainControls" style="display:none">
-    <button class="btn secondary" id="playAgainBtn">Try again with 10 new people →</button>
+    <button class="btn secondary" id="playAgainBtn">Try again with 10 new applicants →</button>
   </div>
 
   <div class="panel lock-panel" id="lockPanel" style="display:none">
@@ -58,7 +58,7 @@
       <p style="font-size:0.85rem;color:var(--muted);margin-top:0.75rem">
         <strong>Shaded area</strong> = the "just looking" phase.
         <strong>Dashed line</strong> = the best score seen during that phase.
-        The leap rule says: propose to the first bar after the shading that pokes above the dashed line.
+        The leap rule says: hire the first bar after the shading that pokes above the dashed line.
       </p>
     </div>
 
@@ -82,30 +82,30 @@
     </div>
   </div>
 
-  <footer class="site-foot">Game 2 of the unit · Chapter 1: Optimal Stopping — inspired by <em>Algorithms to Live By</em>.</footer>
+  <footer class="site-foot">Game 3 of the unit · Chapter 1: Optimal Stopping — inspired by <em>Algorithms to Live By</em>. This is the puzzle's original name: the secretary problem.</footer>
 </div>
 
 <script src="../../assets/stopping-shared.js"></script>
 <script>
 const POOL = [
-  { name: "Meera", bio: "Makes the best filter coffee in three districts." },
-  { name: "Ananya", bio: "Has beaten everyone at chess, including the principal." },
-  { name: "Divya", bio: "Can recite every cricket score since 2003." },
-  { name: "Kavya", bio: "Plans full road-trip itineraries for fun, on weekends." },
-  { name: "Riya", bio: "Grows chillies spicier than her arguments." },
-  { name: "Sana", bio: "Reads two books a week and judges you if you don't." },
-  { name: "Nithya", bio: "Makes a mean biryani and an even meaner debate point." },
-  { name: "Pooja", bio: "Can parallel park a bus. Has never needed to." },
-  { name: "Aisha", bio: "100% win rate at family Ludo tournaments. Undefeated." },
-  { name: "Tara", bio: "Once fixed a laptop using only a hair clip." },
-  { name: "Priya", bio: "Trains for marathons by chasing the school bus." },
-  { name: "Lakshmi", bio: "Has an opinion about your playlist. It is correct." },
+  { name: "Aravind", bio: "Answers emails before you finish typing the question." },
+  { name: "Divya", bio: "Organized the office supply closet alphabetically. Unprompted." },
+  { name: "Kiran", bio: "Has a filing system so good, HR asked to copy it." },
+  { name: "Meena", bio: "Can decode any handwriting, including doctors'." },
+  { name: "Suresh", bio: "Makes the tea rounds with military precision, 9am sharp." },
+  { name: "Anitha", bio: "Once rescheduled a meeting to be earlier. Everyone made it." },
+  { name: "Vikram", bio: "Knows every extension in the building, including the fax machine's." },
+  { name: "Deepa", bio: "Speed-types 120 wpm. Also speed-talks." },
+  { name: "Rahul", bio: "Has never once said 'that's not my job.'" },
+  { name: "Sowmya", bio: "Keeps a spare charger, umbrella, and stapler at her desk. For everyone." },
+  { name: "Karthik", bio: "Remembers everyone's birthday. And brings cake." },
+  { name: "Priya", bio: "Turned a three-day approval process into one click." },
 ];
 
 const N = 10;
-const STATS_KEY = "atlb_stopping_stats";
+const STATS_KEY = "atlb_secretary_stats";
 
-let round = [];       // {name, bio, score} in the order they'll be met
+let round = [];
 let idx = 0;
 let bestSoFar = -Infinity;
 let decided = false;
@@ -170,7 +170,7 @@ function startRound() {
 
 function renderCandidate() {
   const c = round[idx];
-  dateCounterEl.textContent = `Date ${idx + 1} of ${N}`;
+  dateCounterEl.textContent = `Applicant ${idx + 1} of ${N}`;
   candNameEl.textContent = c.name;
   candBioEl.textContent = c.bio;
   candScoreEl.textContent = c.score;
@@ -222,15 +222,15 @@ function finishRound() {
 
   let message;
   if (foundBest) {
-    message = `🏆 Jackpot! ${round[chosenIdx].name} really was the best match out of all ${metCount}.`;
+    message = `🏆 Great hire! ${round[chosenIdx].name} really was the best applicant out of all ${metCount}.`;
   } else if (rank <= 3) {
-    message = `😊 Not bad — ${round[chosenIdx].name} was the #${rank} best match out of ${metCount}.`;
+    message = `😊 Not bad — ${round[chosenIdx].name} was the #${rank} best applicant out of ${metCount}.`;
   } else {
-    message = `😅 Oof — ${round[chosenIdx].name} was only the #${rank} best match out of ${metCount}. There was someone much better out there.`;
+    message = `😅 Oof — ${round[chosenIdx].name} was only the #${rank} best applicant out of ${metCount}. There was someone much better in the pile.`;
   }
   resultBannerEl.innerHTML = `<div class="result-banner ${foundBest ? "correct" : "wrong"}">
     ${message}<br>
-    <span style="font-weight:400;font-size:0.85rem">Lifetime record: found the best match ${stats.foundBest} out of ${stats.played} tries.</span>
+    <span style="font-weight:400;font-size:0.85rem">Lifetime record: hired the best applicant ${stats.foundBest} out of ${stats.played} tries.</span>
   </div>`;
 
   resultsListEl.innerHTML = "";
@@ -238,8 +238,8 @@ function finishRound() {
     const li = document.createElement("li");
     li.className = "results-row" + (i === chosenIdx ? " chosen" : "");
     const crown = p.score === trueBestScore ? " 👑" : "";
-    const proposedMark = i === chosenIdx ? " 💍" : "";
-    li.innerHTML = `<span class="row-name">Date ${i + 1}: ${p.name}${crown}${proposedMark}</span><span class="row-score">${p.score}</span>`;
+    const hiredMark = i === chosenIdx ? " ✅" : "";
+    li.innerHTML = `<span class="row-name">Applicant ${i + 1}: ${p.name}${crown}${hiredMark}</span><span class="row-score">${p.score}</span>`;
     resultsListEl.appendChild(li);
   });
 

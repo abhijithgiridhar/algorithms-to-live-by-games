@@ -48,7 +48,7 @@ function renderStoppingChart(container, { round, N, chosenIdx, trueBestScore }) 
       <text x="${x + barWidth / 2}" y="${y - 6}" text-anchor="middle" font-size="12" font-weight="700" style="fill:${textColor}">${p.score}</text>
       ${isBest ? `<text x="${x + barWidth / 2}" y="${y - 22}" text-anchor="middle" font-size="15">👑</text>` : ""}
       <text x="${x + barWidth / 2}" y="${chartBottom + 18}" text-anchor="middle" font-size="11" style="fill:var(--muted)">${i + 1}</text>
-      ${isChosen ? `<text x="${x + barWidth / 2}" y="${chartBottom + 34}" text-anchor="middle" font-size="14">💍</text>` : ""}
+      ${isChosen ? `<text x="${x + barWidth / 2}" y="${chartBottom + 34}" text-anchor="middle" font-size="14">⭐</text>` : ""}
     `;
   });
 
