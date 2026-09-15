@@ -34,6 +34,17 @@
   <p class="date-counter" id="lastChanceNote" style="display:none">This is the last one — no more dates left. Time to decide!</p>
 
   <div id="resultBanner"></div>
+
+  <div class="panel" id="chartPanel" style="display:none">
+    <h3>The whole round, visually</h3>
+    <div id="roundChart"></div>
+    <p style="font-size:0.85rem;color:var(--muted);margin-top:0.75rem">
+      <strong>Shaded area</strong> = the "just looking" phase.
+      <strong>Dashed line</strong> = the best score seen during that phase.
+      The leap rule says: propose to the first bar after the shading that pokes above the dashed line.
+    </p>
+  </div>
+
   <ul class="results-list" id="resultsList"></ul>
 
   <div class="controls" id="playAgainControls" style="display:none">
@@ -98,6 +109,8 @@ const lastChanceNoteEl = document.getElementById("lastChanceNote");
 const proposeBtn = document.getElementById("proposeBtn");
 const nextBtn = document.getElementById("nextBtn");
 const resultBannerEl = document.getElementById("resultBanner");
+const chartPanelEl = document.getElementById("chartPanel");
+const roundChartEl = document.getElementById("roundChart");
 const resultsListEl = document.getElementById("resultsList");
 const playAgainControlsEl = document.getElementById("playAgainControls");
 const playAgainBtn = document.getElementById("playAgainBtn");
@@ -143,6 +156,8 @@ function startRound() {
 
   resultBannerEl.innerHTML = "";
   resultsListEl.innerHTML = "";
+  chartPanelEl.style.display = "none";
+  roundChartEl.innerHTML = "";
   playAgainControlsEl.style.display = "none";
   explainerEl.style.display = "none";
   decisionControlsEl.style.display = "flex";
@@ -225,8 +240,60 @@ function finishRound() {
     resultsListEl.appendChild(li);
   });
 
+  renderChart(trueBestScore);
+  chartPanelEl.style.display = "block";
+
   playAgainControlsEl.style.display = "flex";
   showExplainer();
+}
+
+function renderChart(trueBestScore) {
+  const width = 620, height = 280;
+  const marginTop = 58, marginBottom = 46;
+  const chartTop = marginTop, chartBottom = height - marginBottom;
+  const chartHeight = chartBottom - chartTop;
+  const gap = 10;
+  const barWidth = (width - gap * (N - 1)) / N;
+
+  const lookPhase = Math.max(1, Math.floor(N / Math.E));
+  const lookBestScore = Math.max(...round.slice(0, lookPhase).map((p) => p.score));
+  const bandRightX = lookPhase * (barWidth + gap) - gap / 2;
+  const thresholdY = chartBottom - (lookBestScore / 100) * chartHeight;
+
+  const xFor = (i) => i * (barWidth + gap);
+  const yFor = (score) => chartBottom - (score / 100) * chartHeight;
+
+  let bars = "";
+  round.forEach((p, i) => {
+    const x = xFor(i);
+    const barH = (p.score / 100) * chartHeight;
+    const y = chartBottom - barH;
+    const isChosen = i === chosenIdx;
+    const isBest = p.score === trueBestScore;
+    const fill = isChosen ? "var(--accent)" : "var(--cell)";
+    const textColor = isChosen ? "var(--accent)" : "var(--ink)";
+
+    bars += `
+      <rect x="${x}" y="${y}" width="${barWidth}" height="${Math.max(barH, 2)}" rx="4" style="fill:${fill}" />
+      <text x="${x + barWidth / 2}" y="${y - 6}" text-anchor="middle" font-size="12" font-weight="700" style="fill:${textColor}">${p.score}</text>
+      ${isBest ? `<text x="${x + barWidth / 2}" y="${y - 22}" text-anchor="middle" font-size="15">👑</text>` : ""}
+      <text x="${x + barWidth / 2}" y="${chartBottom + 18}" text-anchor="middle" font-size="11" style="fill:var(--muted)">${i + 1}</text>
+      ${isChosen ? `<text x="${x + barWidth / 2}" y="${chartBottom + 34}" text-anchor="middle" font-size="14">💍</text>` : ""}
+    `;
+  });
+
+  const svg = `
+    <svg viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="Bar chart of all ${N} dates and their compatibility scores">
+      <rect x="0" y="0" width="${bandRightX}" height="${height}" style="fill:var(--cell);opacity:0.35" />
+      <line x1="${bandRightX}" y1="0" x2="${bandRightX}" y2="${height}" style="stroke:var(--muted)" stroke-dasharray="4,4" />
+      <text x="${bandRightX / 2}" y="14" text-anchor="middle" font-size="11" style="fill:var(--muted)">LOOKING</text>
+      <text x="${(bandRightX + width) / 2}" y="14" text-anchor="middle" font-size="11" style="fill:var(--accent)">READY TO LEAP</text>
+      <line x1="0" y1="${thresholdY}" x2="${width}" y2="${thresholdY}" style="stroke:var(--accent)" stroke-dasharray="3,3" opacity="0.7" />
+      ${bars}
+    </svg>
+  `;
+
+  roundChartEl.innerHTML = svg;
 }
 
 function showExplainer() {
