@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Find Abhijith Sir a Wife — Algorithms to Live By</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../../index.html">&larr; All games</a>
+
+  <header class="page-head">
+    <h1>💍 Find Abhijith Sir a Wife</h1>
+    <p>He'll meet 10 people, one at a time, in a random order.</p>
+    <p>You must decide <strong>right after each date</strong> — propose or move on. No going back!</p>
+  </header>
+
+  <p class="date-counter" id="dateCounter">Date 1 of 10</p>
+
+  <div class="candidate-card" id="candidateCard">
+    <div class="name" id="candName">—</div>
+    <div class="bio" id="candBio">—</div>
+    <div class="score-label">Compatibility score</div>
+    <div class="score" id="candScore">—</div>
+  </div>
+
+  <div class="history-strip" id="historyStrip"></div>
+
+  <div class="controls" id="decisionControls">
+    <button class="btn" id="proposeBtn">💍 Propose!</button>
+    <button class="btn secondary" id="nextBtn">👋 See the next person</button>
+  </div>
+  <p class="date-counter" id="lastChanceNote" style="display:none">This is the last one — no more dates left. Time to decide!</p>
+
+  <div id="resultBanner"></div>
+  <ul class="results-list" id="resultsList"></ul>
+
+  <div class="controls" id="playAgainControls" style="display:none">
+    <button class="btn secondary" id="playAgainBtn">Try again with 10 new people →</button>
+  </div>
+
+  <div class="panel" id="explainer" style="display:none">
+    <h3>The "Look, Then Leap" Rule</h3>
+    <p id="explainIntro"></p>
+    <ol class="steps-list">
+      <li id="stepLook"></li>
+      <li id="stepLeap"></li>
+    </ol>
+    <p id="explainWhy"></p>
+    <hr class="divider">
+    <p id="explainRecap"></p>
+  </div>
+
+  <footer class="site-foot">Game 2 of the unit · Chapter 1: Optimal Stopping — inspired by <em>Algorithms to Live By</em>.</footer>
+</div>
+
+<script>
+const POOL = [
+  { name: "Meera", bio: "Makes the best filter coffee in three districts." },
+  { name: "Ananya", bio: "Has beaten everyone at chess, including the principal." },
+  { name: "Divya", bio: "Can recite every cricket score since 2003." },
+  { name: "Kavya", bio: "Plans full road-trip itineraries for fun, on weekends." },
+  { name: "Riya", bio: "Grows chillies spicier than her arguments." },
+  { name: "Sana", bio: "Reads two books a week and judges you if you don't." },
+  { name: "Nithya", bio: "Makes a mean biryani and an even meaner debate point." },
+  { name: "Pooja", bio: "Can parallel park a bus. Has never needed to." },
+  { name: "Aisha", bio: "100% win rate at family Ludo tournaments. Undefeated." },
+  { name: "Tara", bio: "Once fixed a laptop using only a hair clip." },
+  { name: "Priya", bio: "Trains for marathons by chasing the school bus." },
+  { name: "Lakshmi", bio: "Has an opinion about your playlist. It is correct." },
+];
+
+const N = 10;
+const STATS_KEY = "atlb_stopping_stats";
+
+let round = [];       // {name, bio, score} in the order they'll be met
+let idx = 0;
+let bestSoFar = -Infinity;
+let decided = false;
+let chosenIdx = null;
+let ranOutOfPeople = false;
+
+const dateCounterEl = document.getElementById("dateCounter");
+const candNameEl = document.getElementById("candName");
+const candBioEl = document.getElementById("candBio");
+const candScoreEl = document.getElementById("candScore");
+const historyStripEl = document.getElementById("historyStrip");
+const decisionControlsEl = document.getElementById("decisionControls");
+const lastChanceNoteEl = document.getElementById("lastChanceNote");
+const proposeBtn = document.getElementById("proposeBtn");
+const nextBtn = document.getElementById("nextBtn");
+const resultBannerEl = document.getElementById("resultBanner");
+const resultsListEl = document.getElementById("resultsList");
+const playAgainControlsEl = document.getElementById("playAgainControls");
+const playAgainBtn = document.getElementById("playAgainBtn");
+const explainerEl = document.getElementById("explainer");
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function uniqueScores(n) {
+  const set = new Set();
+  while (set.size < n) set.add(Math.floor(Math.random() * 98) + 1);
+  return Array.from(set);
+}
+
+function loadStats() {
+  try {
+    return JSON.parse(localStorage.getItem(STATS_KEY)) || { played: 0, foundBest: 0 };
+  } catch (e) {
+    return { played: 0, foundBest: 0 };
+  }
+}
+
+function saveStats(stats) {
+  localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+}
+
+function startRound() {
+  const people = shuffle(POOL).slice(0, N);
+  const scores = shuffle(uniqueScores(N));
+  round = people.map((p, i) => ({ ...p, score: scores[i] }));
+
+  idx = 0;
+  bestSoFar = -Infinity;
+  decided = false;
+  chosenIdx = null;
+  ranOutOfPeople = false;
+
+  resultBannerEl.innerHTML = "";
+  resultsListEl.innerHTML = "";
+  playAgainControlsEl.style.display = "none";
+  explainerEl.style.display = "none";
+  decisionControlsEl.style.display = "flex";
+
+  renderCandidate();
+}
+
+function renderCandidate() {
+  const c = round[idx];
+  dateCounterEl.textContent = `Date ${idx + 1} of ${N}`;
+  candNameEl.textContent = c.name;
+  candBioEl.textContent = c.bio;
+  candScoreEl.textContent = c.score;
+
+  if (c.score > bestSoFar) bestSoFar = c.score;
+
+  historyStripEl.innerHTML = "";
+  round.slice(0, idx + 1).forEach((p) => {
+    const chip = document.createElement("span");
+    chip.className = "history-chip" + (p.score === bestSoFar ? " best-so-far" : "");
+    chip.textContent = p.score;
+    historyStripEl.appendChild(chip);
+  });
+
+  const isLast = idx === N - 1;
+  nextBtn.style.display = isLast ? "none" : "inline-block";
+  lastChanceNoteEl.style.display = isLast ? "block" : "none";
+}
+
+function propose() {
+  if (decided) return;
+  chosenIdx = idx;
+  finishRound();
+}
+
+function seeNext() {
+  if (decided || idx >= N - 1) return;
+  idx += 1;
+  renderCandidate();
+}
+
+function finishRound() {
+  decided = true;
+  decisionControlsEl.style.display = "none";
+  lastChanceNoteEl.style.display = "none";
+
+  const metCount = round.length; // full list is always known once the round ends
+  const chosenScore = round[chosenIdx].score;
+  const trueBestScore = Math.max(...round.map((p) => p.score));
+  const foundBest = chosenScore === trueBestScore;
+
+  const sortedDesc = round.map((p) => p.score).slice().sort((a, b) => b - a);
+  const rank = sortedDesc.indexOf(chosenScore) + 1;
+
+  const stats = loadStats();
+  stats.played += 1;
+  if (foundBest) stats.foundBest += 1;
+  saveStats(stats);
+
+  let message;
+  if (foundBest) {
+    message = `🏆 Jackpot! ${round[chosenIdx].name} really was the best match out of all ${metCount}.`;
+  } else if (rank <= 3) {
+    message = `😊 Not bad — ${round[chosenIdx].name} was the #${rank} best match out of ${metCount}.`;
+  } else {
+    message = `😅 Oof — ${round[chosenIdx].name} was only the #${rank} best match out of ${metCount}. There was someone much better out there.`;
+  }
+  resultBannerEl.innerHTML = `<div class="result-banner ${foundBest ? "correct" : "wrong"}">
+    ${message}<br>
+    <span style="font-weight:400;font-size:0.85rem">Lifetime record: found the best match ${stats.foundBest} out of ${stats.played} tries.</span>
+  </div>`;
+
+  resultsListEl.innerHTML = "";
+  round.forEach((p, i) => {
+    const li = document.createElement("li");
+    li.className = "results-row" + (i === chosenIdx ? " chosen" : "");
+    const crown = p.score === trueBestScore ? " 👑" : "";
+    const proposedMark = i === chosenIdx ? " 💍" : "";
+    li.innerHTML = `<span class="row-name">Date ${i + 1}: ${p.name}${crown}${proposedMark}</span><span class="row-score">${p.score}</span>`;
+    resultsListEl.appendChild(li);
+  });
+
+  playAgainControlsEl.style.display = "flex";
+  showExplainer();
+}
+
+function showExplainer() {
+  const lookPhase = Math.max(1, Math.floor(N / Math.E));
+  const proposedOn = chosenIdx + 1;
+  const randomOdds = Math.round(100 / N);
+
+  document.getElementById("explainIntro").textContent =
+    `This game is a classic puzzle called the secretary problem: people (or apartments, or job candidates) show up one at a time, you must decide immediately, and you can never go back to someone you passed on. Here's the trick that gives you the best shot at ending up with the very best one.`;
+
+  document.getElementById("stepLook").textContent =
+    `Just look, don't leap — for the first ${lookPhase} out of ${N} people, don't propose to anyone, no matter how great they seem. Just keep track of the best score you've seen.`;
+
+  document.getElementById("stepLeap").textContent =
+    `Then leap at the first one who beats your best — once you're past that first ${lookPhase}, propose to the very next person who scores higher than everyone before them.`;
+
+  document.getElementById("explainWhy").textContent =
+    `Why stop looking at around ${lookPhase} people (roughly 37% of the way through)? That exact point gives this strategy its best odds — close to a 37% chance of ending up with the single best match out of everyone you'll meet. Compare that to just proposing to a random person: only a 1-in-${N} chance (${randomOdds}%). Not a guarantee, but a huge upgrade.`;
+
+  document.getElementById("explainRecap").textContent =
+    `This round: you proposed on date #${proposedOn}. The rule above would say — reject the first ${lookPhase} no matter what, then propose to the next person who beats all of them. Try that exact plan on your next run and see how it goes!`;
+
+  explainerEl.style.display = "block";
+}
+
+proposeBtn.addEventListener("click", propose);
+nextBtn.addEventListener("click", seeNext);
+playAgainBtn.addEventListener("click", startRound);
+
+startRound();
+</script>
+</body>
+</html>

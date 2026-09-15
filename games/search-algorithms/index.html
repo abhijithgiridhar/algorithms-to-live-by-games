@@ -45,30 +45,28 @@
     <p id="explainText"></p>
     <div class="code-compare">
       <div class="code-block">
-        <h4>Linear search</h4>
-        <p class="complexity">Check every box, in order, until you find it or run out. Worst case: <strong id="linearWorst"></strong> checks.</p>
-        <pre>for i in range(len(list)):
-    if list[i] == target:
-        return i
-return "not found"</pre>
+        <h4>🐢 The slow way: check one by one</h4>
+        <p class="complexity">Worst case: <strong id="linearWorst"></strong> checks on this list.</p>
+        <ol class="steps-list">
+          <li>Start at the first box.</li>
+          <li>Is this the number? If yes, done!</li>
+          <li>If not, move to the next box and ask again.</li>
+          <li>Keep going until you find it — or run out of boxes.</li>
+        </ol>
       </div>
       <div class="code-block">
-        <h4>Binary search</h4>
-        <p class="complexity">Because the list is <em>sorted</em>, check the middle box, then throw away the half that can't contain the target. Worst case: <strong id="binaryWorst"></strong> checks.</p>
-        <pre>lo, hi = 0, len(list) - 1
-while lo <= hi:
-    mid = (lo + hi) // 2
-    if list[mid] == target:
-        return mid
-    elif list[mid] < target:
-        lo = mid + 1
-    else:
-        hi = mid - 1
-return "not found"</pre>
+        <h4>🐇 The smart way: split in half each time</h4>
+        <p class="complexity">Worst case: <strong id="binaryWorst"></strong> checks on this list.</p>
+        <ol class="steps-list">
+          <li>Because the list is <strong>sorted</strong>, check the box in the exact middle.</li>
+          <li>Too big? The number must be to the <em>left</em> — forget the whole right half.</li>
+          <li>Too small? Forget the whole left half instead.</li>
+          <li>You've now got half as many boxes to search. Repeat the same trick on what's left.</li>
+        </ol>
       </div>
     </div>
     <hr class="divider">
-    <p><strong>The idea:</strong> a sorted list is a resource. Every time you check the middle of what's left, you cut the remaining possibilities in half — that's why binary search needs so few checks even on a huge list. A linear search ignores that structure and pays for it.</p>
+    <p><strong>The idea:</strong> a sorted list is a shortcut waiting to be used. Every time you check the middle of what's left, you throw away half the remaining boxes at once — that's why the smart way barely grows even on a huge list, while checking one by one gets slower and slower.</p>
   </div>
 
   <footer class="site-foot">Game 1 of the unit · Introduction — inspired by <em>Algorithms to Live By</em>.</footer>

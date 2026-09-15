@@ -252,6 +252,107 @@ hr.divider {
   margin: 2rem 0;
 }
 
+.steps-list {
+  padding-left: 1.2rem;
+  margin: 0.5rem 0;
+}
+
+.steps-list li { margin-bottom: 0.7rem; }
+
+.candidate-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  max-width: 420px;
+  margin: 1.5rem auto;
+}
+
+.candidate-card .name {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 0.3rem;
+}
+
+.candidate-card .bio {
+  color: var(--muted);
+  margin-bottom: 1.25rem;
+  min-height: 2.6em;
+}
+
+.candidate-card .score-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.candidate-card .score {
+  font-size: 2.6rem;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1.1;
+}
+
+.date-counter {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.history-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+  margin: 1rem 0 1.5rem;
+}
+
+.history-chip {
+  background: var(--cell);
+  color: var(--cell-ink);
+  border-radius: 999px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.history-chip.best-so-far {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.results-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.results-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  font-size: 0.95rem;
+}
+
+.results-row.chosen {
+  border-color: var(--accent);
+  background: #f6e9e8;
+  font-weight: 700;
+}
+
+.results-row .row-name { text-align: left; }
+.results-row .row-score { font-weight: 700; }
+
 footer.site-foot {
   text-align: center;
   color: var(--muted);
