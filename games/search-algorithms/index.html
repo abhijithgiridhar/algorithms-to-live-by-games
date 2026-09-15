@@ -67,6 +67,37 @@
     </div>
     <hr class="divider">
     <p><strong>The idea:</strong> a sorted list is a shortcut waiting to be used. Every time you check the middle of what's left, you throw away half the remaining boxes at once — that's why the smart way barely grows even on a huge list, while checking one by one gets slower and slower.</p>
+
+    <hr class="divider">
+    <h3>Now in code</h3>
+    <p>This is exactly what you just did, written as a real program. Read it next to the steps above — every line matches one of the steps.</p>
+    <div class="code-compare">
+      <div class="code-block">
+        <h4>🐢 Linear search</h4>
+        <pre><code>def linear_search(numbers, target):
+    for index in range(len(numbers)):
+        if numbers[index] == target:
+            return index       # found it!
+    return -1                  # never found it</code></pre>
+      </div>
+      <div class="code-block">
+        <h4>🐇 Binary search</h4>
+        <pre><code>def binary_search(numbers, target):
+    low = 0
+    high = len(numbers) - 1
+
+    while low <= high:
+        middle = (low + high) // 2
+        if numbers[middle] == target:
+            return middle          # found it!
+        elif numbers[middle] < target:
+            low = middle + 1       # forget the left half
+        else:
+            high = middle - 1      # forget the right half
+
+    return -1                      # never found it</code></pre>
+      </div>
+    </div>
   </div>
 
   <footer class="site-foot">Game 1 of the unit · Introduction — inspired by <em>Algorithms to Live By</em>.</footer>

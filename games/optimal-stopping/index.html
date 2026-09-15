@@ -50,6 +50,13 @@
     <p id="explainWhy"></p>
     <hr class="divider">
     <p id="explainRecap"></p>
+
+    <hr class="divider">
+    <h3>Now in code</h3>
+    <p>This is exactly the plan above, written as a real program. <code id="lookPhaseInline"></code> is the "just look" cutoff for this round.</p>
+    <div class="code-block">
+      <pre><code id="codeBlock"></code></pre>
+    </div>
   </div>
 
   <footer class="site-foot">Game 2 of the unit · Chapter 1: Optimal Stopping — inspired by <em>Algorithms to Live By</em>.</footer>
@@ -241,6 +248,22 @@ function showExplainer() {
 
   document.getElementById("explainRecap").textContent =
     `This round: you proposed on date #${proposedOn}. The rule above would say — reject the first ${lookPhase} no matter what, then propose to the next person who beats all of them. Try that exact plan on your next run and see how it goes!`;
+
+  document.getElementById("lookPhaseInline").textContent = `look_phase = ${lookPhase}`;
+  document.getElementById("codeBlock").textContent =
+`def find_a_match(people, look_phase):
+    best_score_seen = 0
+
+    for i, person in enumerate(people):
+        if i < look_phase:
+            # just looking -- never propose yet
+            best_score_seen = max(best_score_seen, person.score)
+            continue
+
+        if person.score > best_score_seen:
+            return person       # propose!
+
+    return people[-1]           # ran out -- stuck with the last one`;
 
   explainerEl.style.display = "block";
 }
