@@ -1,0 +1,260 @@
+:root {
+  --bg: #f7f5f2;
+  --panel: #ffffff;
+  --ink: #1c1b1a;
+  --muted: #6b6560;
+  --accent: #b0413e;
+  --accent-ink: #ffffff;
+  --border: #e3ddd4;
+  --cell: #d8d2c8;
+  --cell-ink: #f7f5f2;
+  --good: #2f6f4f;
+  --bad: #b0413e;
+  --code-bg: #1c1b1a;
+  --code-ink: #f0e9df;
+  font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 4rem;
+}
+
+a { color: var(--accent); }
+
+header.page-head {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+header.page-head h1 {
+  font-size: 2rem;
+  margin: 0 0 0.4rem;
+}
+
+header.page-head p {
+  color: var(--muted);
+  margin: 0.2rem 0;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  text-decoration: none;
+  color: var(--ink);
+  display: block;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
+
+.card.locked {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.card h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--border);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  margin-bottom: 0.6rem;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+}
+
+.cell {
+  background: var(--cell);
+  color: var(--cell-ink);
+  border: none;
+  border-radius: 6px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.cell:hover:not(:disabled) { background: #c5beb2; }
+
+.cell:disabled {
+  background: var(--panel);
+  color: var(--ink);
+  cursor: default;
+  border: 1px solid var(--border);
+}
+
+.cell .value {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.cell.checked { border: 2px solid var(--accent); }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+button.btn {
+  font: inherit;
+  background: var(--accent);
+  color: var(--accent-ink);
+  border: none;
+  border-radius: 8px;
+  padding: 0.55rem 1.1rem;
+  cursor: pointer;
+}
+
+button.btn.secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+button.btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.score-row {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.score-row .num {
+  font-size: 1.8rem;
+  font-weight: 700;
+  display: block;
+}
+
+.score-row .label {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.result-banner {
+  text-align: center;
+  font-weight: 600;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.result-banner.correct { background: #e4f0e9; color: var(--good); }
+.result-banner.wrong { background: #f6e4e3; color: var(--bad); }
+
+.code-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 640px) {
+  .code-compare { grid-template-columns: 1fr; }
+  .grid { grid-template-columns: repeat(5, 1fr); }
+}
+
+.code-block h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+
+.code-block .complexity {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 0.2rem 0 0.5rem;
+}
+
+pre {
+  background: var(--code-bg);
+  color: var(--code-ink);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+hr.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2rem 0;
+}
+
+footer.site-foot {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-top: 3rem;
+}

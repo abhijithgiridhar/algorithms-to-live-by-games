@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design a Search — Algorithms to Live By</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../../index.html">&larr; All games</a>
+
+  <header class="page-head">
+    <h1>Design a Search</h1>
+    <p id="prompt">Click boxes to reveal numbers. The list is sorted left to right, top to bottom.</p>
+    <p>Decide whether <strong><span id="target">?</span></strong> is in the list — using as few clicks as possible.</p>
+  </header>
+
+  <div class="score-row">
+    <div>
+      <span class="num" id="clickCount">0</span>
+      <span class="label">Clicks</span>
+    </div>
+    <div>
+      <span class="num" id="bestScore">—</span>
+      <span class="label">Personal best</span>
+    </div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="controls">
+    <button class="btn" id="sayPresent">The number IS in the list</button>
+    <button class="btn secondary" id="sayAbsent">The number is NOT in the list</button>
+  </div>
+
+  <div id="resultBanner"></div>
+
+  <div class="controls">
+    <button class="btn secondary" id="newRound" style="display:none">New round →</button>
+  </div>
+
+  <div class="panel" id="explainer" style="display:none">
+    <h3>What you just did</h3>
+    <p id="explainText"></p>
+    <div class="code-compare">
+      <div class="code-block">
+        <h4>Linear search</h4>
+        <p class="complexity">Check every box, in order, until you find it or run out. Worst case: <strong id="linearWorst"></strong> checks.</p>
+        <pre>for i in range(len(list)):
+    if list[i] == target:
+        return i
+return "not found"</pre>
+      </div>
+      <div class="code-block">
+        <h4>Binary search</h4>
+        <p class="complexity">Because the list is <em>sorted</em>, check the middle box, then throw away the half that can't contain the target. Worst case: <strong id="binaryWorst"></strong> checks.</p>
+        <pre>lo, hi = 0, len(list) - 1
+while lo <= hi:
+    mid = (lo + hi) // 2
+    if list[mid] == target:
+        return mid
+    elif list[mid] < target:
+        lo = mid + 1
+    else:
+        hi = mid - 1
+return "not found"</pre>
+      </div>
+    </div>
+    <hr class="divider">
+    <p><strong>The idea:</strong> a sorted list is a resource. Every time you check the middle of what's left, you cut the remaining possibilities in half — that's why binary search needs so few checks even on a huge list. A linear search ignores that structure and pays for it.</p>
+  </div>
+
+  <footer class="site-foot">Game 1 of the unit · Introduction — inspired by <em>Algorithms to Live By</em>.</footer>
+</div>
+
+<script>
+const GRID_SIZE = 21;
+const BEST_KEY = "atlb_search_best";
+
+let list = [];
+let target = null;
+let isPresent = false;
+let clicks = 0;
+let checkedIdx = new Set();
+let roundOver = false;
+
+const gridEl = document.getElementById("grid");
+const clickCountEl = document.getElementById("clickCount");
+const bestScoreEl = document.getElementById("bestScore");
+const targetEl = document.getElementById("target");
+const resultBannerEl = document.getElementById("resultBanner");
+const explainerEl = document.getElementById("explainer");
+const explainTextEl = document.getElementById("explainText");
+const newRoundBtn = document.getElementById("newRound");
+const sayPresentBtn = document.getElementById("sayPresent");
+const sayAbsentBtn = document.getElementById("sayAbsent");
+
+function loadBest() {
+  const v = localStorage.getItem(BEST_KEY);
+  bestScoreEl.textContent = v ? v : "—";
+}
+
+function saveBestIfBetter(n) {
+  const current = localStorage.getItem(BEST_KEY);
+  if (!current || n < parseInt(current, 10)) {
+    localStorage.setItem(BEST_KEY, String(n));
+    bestScoreEl.textContent = String(n);
+  }
+}
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function generateRound() {
+  const values = new Set();
+  while (values.size < GRID_SIZE) {
+    values.add(randInt(1, 99));
+  }
+  list = Array.from(values).sort((a, b) => a - b);
+
+  isPresent = Math.random() < 0.6;
+  if (isPresent) {
+    target = list[randInt(0, GRID_SIZE - 1)];
+  } else {
+    let candidate;
+    do {
+      candidate = randInt(1, 99);
+    } while (list.includes(candidate));
+    target = candidate;
+  }
+
+  clicks = 0;
+  checkedIdx = new Set();
+  roundOver = false;
+
+  targetEl.textContent = target;
+  clickCountEl.textContent = "0";
+  resultBannerEl.innerHTML = "";
+  explainerEl.style.display = "none";
+  newRoundBtn.style.display = "none";
+  sayPresentBtn.disabled = false;
+  sayAbsentBtn.disabled = false;
+
+  renderGrid();
+}
+
+function renderGrid() {
+  gridEl.innerHTML = "";
+  list.forEach((value, idx) => {
+    const btn = document.createElement("button");
+    btn.className = "cell";
+    const wasChecked = checkedIdx.has(idx);
+    if (wasChecked) {
+      btn.classList.add("checked");
+      btn.disabled = true;
+      btn.innerHTML = `<span class="label">Idx: ${idx}</span><span class="value">${value}</span>`;
+    } else {
+      btn.innerHTML = `<span class="label">Idx: ${idx}</span>`;
+      btn.disabled = roundOver;
+      btn.addEventListener("click", () => revealCell(idx));
+    }
+    gridEl.appendChild(btn);
+  });
+}
+
+function revealCell(idx) {
+  if (roundOver || checkedIdx.has(idx)) return;
+  checkedIdx.add(idx);
+  clicks += 1;
+  clickCountEl.textContent = String(clicks);
+  renderGrid();
+}
+
+function endRound(guessPresent) {
+  if (roundOver) return;
+  roundOver = true;
+  sayPresentBtn.disabled = true;
+  sayAbsentBtn.disabled = true;
+  newRoundBtn.style.display = "inline-block";
+
+  const correct = guessPresent === isPresent;
+  resultBannerEl.innerHTML = `<div class="result-banner ${correct ? "correct" : "wrong"}">
+    ${correct ? "Correct!" : "Not quite."} ${target} ${isPresent ? "was" : "was not"} in the list.
+  </div>`;
+
+  if (correct) saveBestIfBetter(clicks);
+
+  // Reveal every remaining cell so students can see the full sorted list.
+  checkedIdx = new Set(list.map((_, i) => i));
+  renderGrid();
+
+  const n = GRID_SIZE;
+  const linearWorst = n;
+  const binaryWorst = Math.floor(Math.log2(n)) + 1;
+  document.getElementById("linearWorst").textContent = linearWorst;
+  document.getElementById("binaryWorst").textContent = binaryWorst;
+
+  explainTextEl.textContent =
+    `You used ${clicks} click${clicks === 1 ? "" : "s"} on a list of ${n}. ` +
+    `A linear search (checking one by one) could need up to ${linearWorst} checks here. ` +
+    `A binary search (always checking the middle of what's left) never needs more than ${binaryWorst} — ` +
+    `no matter which of these ${n} numbers you were looking for.`;
+
+  explainerEl.style.display = "block";
+}
+
+sayPresentBtn.addEventListener("click", () => endRound(true));
+sayAbsentBtn.addEventListener("click", () => endRound(false));
+newRoundBtn.addEventListener("click", generateRound);
+
+loadBest();
+generateRound();
+</script>
+</body>
+</html>
