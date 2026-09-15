@@ -40,49 +40,61 @@
     <button class="btn secondary" id="newRound" style="display:none">New round →</button>
   </div>
 
-  <div class="panel" id="explainer" style="display:none">
-    <h3>What you just did</h3>
-    <p id="explainText"></p>
-    <div class="code-compare">
-      <div class="code-block">
-        <h4>🐢 The slow way: check one by one</h4>
-        <p class="complexity">Worst case: <strong id="linearWorst"></strong> checks on this list.</p>
-        <ol class="steps-list">
-          <li>Start at the first box.</li>
-          <li>Is this the number? If yes, done!</li>
-          <li>If not, move to the next box and ask again.</li>
-          <li>Keep going until you find it — or run out of boxes.</li>
-        </ol>
-      </div>
-      <div class="code-block">
-        <h4>🐇 The smart way: split in half each time</h4>
-        <p class="complexity">Worst case: <strong id="binaryWorst"></strong> checks on this list.</p>
-        <ol class="steps-list">
-          <li>Because the list is <strong>sorted</strong>, check the box in the exact middle.</li>
-          <li>Too big? The number must be to the <em>left</em> — forget the whole right half.</li>
-          <li>Too small? Forget the whole left half instead.</li>
-          <li>You've now got half as many boxes to search. Repeat the same trick on what's left.</li>
-        </ol>
-      </div>
+  <div class="panel lock-panel" id="lockPanel" style="display:none">
+    <div class="lock-icon">🔒</div>
+    <h3>Ready to see how it's really done?</h3>
+    <p>Ask your teacher for the password once everyone's had a go.</p>
+    <div class="controls">
+      <input type="password" class="password-input" id="passwordInput" placeholder="Password">
+      <button class="btn" id="unlockBtn">Unlock</button>
     </div>
-    <hr class="divider">
-    <p><strong>The idea:</strong> a sorted list is a shortcut waiting to be used. Every time you check the middle of what's left, you throw away half the remaining boxes at once — that's why the smart way barely grows even on a huge list, while checking one by one gets slower and slower.</p>
+    <p class="lock-error" id="lockError" style="display:none">Not quite — try again.</p>
+  </div>
 
-    <hr class="divider">
-    <h3>Now in code</h3>
-    <p>This is exactly what you just did, written as a real program. Read it next to the steps above — every line matches one of the steps.</p>
-    <div class="code-compare">
-      <div class="code-block">
-        <h4>🐢 Linear search</h4>
-        <pre><code>def linear_search(numbers, target):
+  <div id="revealContent" style="display:none">
+    <div class="panel" id="explainer">
+      <h3>What you just did</h3>
+      <p id="explainText"></p>
+      <div class="code-compare">
+        <div class="code-block">
+          <h4>🐢 The slow way: check one by one</h4>
+          <p class="complexity">Worst case: <strong id="linearWorst"></strong> checks on this list.</p>
+          <ol class="steps-list">
+            <li>Start at the first box.</li>
+            <li>Is this the number? If yes, done!</li>
+            <li>If not, move to the next box and ask again.</li>
+            <li>Keep going until you find it — or run out of boxes.</li>
+          </ol>
+        </div>
+        <div class="code-block">
+          <h4>🐇 The smart way: split in half each time</h4>
+          <p class="complexity">Worst case: <strong id="binaryWorst"></strong> checks on this list.</p>
+          <ol class="steps-list">
+            <li>Because the list is <strong>sorted</strong>, check the box in the exact middle.</li>
+            <li>Too big? The number must be to the <em>left</em> — forget the whole right half.</li>
+            <li>Too small? Forget the whole left half instead.</li>
+            <li>You've now got half as many boxes to search. Repeat the same trick on what's left.</li>
+          </ol>
+        </div>
+      </div>
+      <hr class="divider">
+      <p><strong>The idea:</strong> a sorted list is a shortcut waiting to be used. Every time you check the middle of what's left, you throw away half the remaining boxes at once — that's why the smart way barely grows even on a huge list, while checking one by one gets slower and slower.</p>
+
+      <hr class="divider">
+      <h3>Now in code</h3>
+      <p>This is exactly what you just did, written as a real program. Read it next to the steps above — every line matches one of the steps.</p>
+      <div class="code-compare">
+        <div class="code-block">
+          <h4>🐢 Linear search</h4>
+          <pre><code>def linear_search(numbers, target):
     for index in range(len(numbers)):
         if numbers[index] == target:
             return index       # found it!
     return -1                  # never found it</code></pre>
-      </div>
-      <div class="code-block">
-        <h4>🐇 Binary search</h4>
-        <pre><code>def binary_search(numbers, target):
+        </div>
+        <div class="code-block">
+          <h4>🐇 Binary search</h4>
+          <pre><code>def binary_search(numbers, target):
     low = 0
     high = len(numbers) - 1
 
@@ -96,6 +108,7 @@
             high = middle - 1      # forget the right half
 
     return -1                      # never found it</code></pre>
+        </div>
       </div>
     </div>
   </div>
@@ -103,6 +116,7 @@
   <footer class="site-foot">Game 1 of the unit · Introduction — inspired by <em>Algorithms to Live By</em>.</footer>
 </div>
 
+<script src="../../assets/lock-shared.js"></script>
 <script>
 const GRID_SIZE = 21;
 const BEST_KEY = "atlb_search_best";
@@ -119,11 +133,19 @@ const clickCountEl = document.getElementById("clickCount");
 const bestScoreEl = document.getElementById("bestScore");
 const targetEl = document.getElementById("target");
 const resultBannerEl = document.getElementById("resultBanner");
-const explainerEl = document.getElementById("explainer");
 const explainTextEl = document.getElementById("explainText");
 const newRoundBtn = document.getElementById("newRound");
 const sayPresentBtn = document.getElementById("sayPresent");
 const sayAbsentBtn = document.getElementById("sayAbsent");
+
+const lock = initGameLock({
+  storageKey: "atlb_answers_unlocked",
+  lockPanelEl: document.getElementById("lockPanel"),
+  passwordInputEl: document.getElementById("passwordInput"),
+  unlockBtnEl: document.getElementById("unlockBtn"),
+  lockErrorEl: document.getElementById("lockError"),
+  contentEl: document.getElementById("revealContent"),
+});
 
 function loadBest() {
   const v = localStorage.getItem(BEST_KEY);
@@ -167,7 +189,8 @@ function generateRound() {
   targetEl.textContent = target;
   clickCountEl.textContent = "0";
   resultBannerEl.innerHTML = "";
-  explainerEl.style.display = "none";
+  document.getElementById("lockPanel").style.display = "none";
+  document.getElementById("revealContent").style.display = "none";
   newRoundBtn.style.display = "none";
   sayPresentBtn.disabled = false;
   sayAbsentBtn.disabled = false;
@@ -232,7 +255,7 @@ function endRound(guessPresent) {
     `A binary search (always checking the middle of what's left) never needs more than ${binaryWorst} — ` +
     `no matter which of these ${n} numbers you were looking for.`;
 
-  explainerEl.style.display = "block";
+  lock.reveal();
 }
 
 sayPresentBtn.addEventListener("click", () => endRound(true));

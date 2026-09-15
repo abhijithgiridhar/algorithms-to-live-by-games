@@ -85,6 +85,7 @@
   <footer class="site-foot">Game 2 of the unit · Chapter 1: Optimal Stopping — inspired by <em>Algorithms to Live By</em>.</footer>
 </div>
 
+<script src="../../assets/lock-shared.js"></script>
 <script src="../../assets/stopping-shared.js"></script>
 <script>
 const POOL = [
@@ -126,8 +127,8 @@ const resultsListEl = document.getElementById("resultsList");
 const playAgainControlsEl = document.getElementById("playAgainControls");
 const playAgainBtn = document.getElementById("playAgainBtn");
 
-const lock = initStoppingLock({
-  storageKey: "atlb_stopping_unlocked",
+const lock = initGameLock({
+  storageKey: "atlb_answers_unlocked",
   lockPanelEl: document.getElementById("lockPanel"),
   passwordInputEl: document.getElementById("passwordInput"),
   unlockBtnEl: document.getElementById("unlockBtn"),

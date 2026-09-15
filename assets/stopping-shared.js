@@ -1,7 +1,6 @@
 // Shared logic for every "optimal stopping" game skin (Rishta Hunt, Secretary, ...).
 // Keeps the underlying explanation, chart, and code identical no matter the theme.
-
-const STOPPING_PASSWORD = "37";
+// The password gate itself lives in lock-shared.js (used by every game on the site).
 
 function stoppingShuffle(arr) {
   const a = arr.slice();
@@ -103,46 +102,4 @@ function renderStoppingExplainer(els, { N, chosenIdx }) {
     return options[-1]           # ran out -- stuck with the last one`;
 
   return lookPhase;
-}
-
-// opts: { storageKey, lockPanelEl, passwordInputEl, unlockBtnEl, lockErrorEl, contentEl }
-function initStoppingLock(opts) {
-  const { storageKey, lockPanelEl, passwordInputEl, unlockBtnEl, lockErrorEl, contentEl } = opts;
-
-  function isUnlocked() {
-    return localStorage.getItem(storageKey) === "yes";
-  }
-
-  function showLocked() {
-    lockPanelEl.style.display = "block";
-    contentEl.style.display = "none";
-  }
-
-  function showUnlocked() {
-    lockPanelEl.style.display = "none";
-    contentEl.style.display = "block";
-  }
-
-  function attemptUnlock() {
-    if (passwordInputEl.value.trim() === STOPPING_PASSWORD) {
-      localStorage.setItem(storageKey, "yes");
-      lockErrorEl.style.display = "none";
-      passwordInputEl.value = "";
-      showUnlocked();
-    } else {
-      lockErrorEl.style.display = "block";
-    }
-  }
-
-  unlockBtnEl.addEventListener("click", attemptUnlock);
-  passwordInputEl.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") attemptUnlock();
-  });
-
-  return {
-    reveal() {
-      if (isUnlocked()) showUnlocked();
-      else showLocked();
-    },
-  };
 }
