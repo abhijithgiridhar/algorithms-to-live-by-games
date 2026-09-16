@@ -33,11 +33,14 @@
   </div>
   <p class="date-counter" id="lastChanceNote" style="display:none">This is the last one — no more dates left. Time to decide!</p>
 
-  <p class="date-counter" id="roundDoneNote" style="display:none">Round complete! Ask your teacher for the password to see how it went.</p>
+  <div id="resultBanner"></div>
+  <ul class="results-list" id="resultsList"></ul>
 
   <div class="controls" id="playAgainControls" style="display:none">
     <button class="btn secondary" id="playAgainBtn">Try again with 10 new people →</button>
   </div>
+
+  <p class="date-counter" id="roundDoneNote" style="display:none">Want to see the explanation? Ask your teacher for the password.</p>
 
   <div class="panel lock-panel" id="lockPanel" style="display:none">
     <div class="lock-icon">🔒</div>
@@ -51,9 +54,6 @@
   </div>
 
   <div id="revealContent" style="display:none">
-    <div id="resultBanner"></div>
-    <ul class="results-list" id="resultsList"></ul>
-
     <div class="panel" id="chartPanel">
       <h3>The whole round, visually</h3>
       <div id="roundChart"></div>
