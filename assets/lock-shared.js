@@ -1,7 +1,7 @@
 // Generic "answer key" password gate, shared by every game on the site.
 // Keeps the reveal (explanation / code / chart) hidden until the class password is entered.
 
-const GAME_PASSWORD = "37";
+const GAME_PASSWORD = "67";
 
 // opts: { storageKey, lockPanelEl, passwordInputEl, unlockBtnEl, lockErrorEl, contentEl }
 function initGameLock(opts) {
