@@ -52,7 +52,26 @@
     </div>
   </div>
 
+  <div class="panel" id="resetPanel" style="margin-top:2.5rem;text-align:center">
+    <h3 style="margin-top:0">Teacher tools</h3>
+    <p style="color:var(--muted);font-size:0.9rem;max-width:34rem;margin:0.3rem auto 1rem">
+      Locks the answer key back up on <strong>this device</strong> — useful before a demo, or if you were the one who unlocked it while testing.
+      It cannot reach students' own phones or laptops; each device holds its own unlock, with no way for a button here to touch it.
+      To force a fresh lock for everyone at once, ask Claude to roll the passwords — that pushes new ones every device has to re-enter.
+    </p>
+    <button class="btn secondary" id="resetBtn" type="button">🔒 Re-lock all answer keys on this device</button>
+    <p id="resetStatus" style="display:none;color:var(--good);font-weight:600;margin-top:0.7rem">Done — this device is locked on every game again.</p>
+  </div>
+
   <footer class="site-foot">Built for class — inspired by <em>Algorithms to Live By</em> by Brian Christian &amp; Tom Griffiths.</footer>
 </div>
+
+<script src="assets/lock-shared.js"></script>
+<script>
+document.getElementById("resetBtn").addEventListener("click", () => {
+  Object.values(GAME_LOCKS).forEach((lock) => localStorage.removeItem(lock.storageKey));
+  document.getElementById("resetStatus").style.display = "block";
+});
+</script>
 </body>
 </html>
