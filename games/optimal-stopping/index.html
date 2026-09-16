@@ -33,8 +33,7 @@
   </div>
   <p class="date-counter" id="lastChanceNote" style="display:none">This is the last one — no more dates left. Time to decide!</p>
 
-  <div id="resultBanner"></div>
-  <ul class="results-list" id="resultsList"></ul>
+  <p class="date-counter" id="roundDoneNote" style="display:none">Round complete! Ask your teacher for the password to see how it went.</p>
 
   <div class="controls" id="playAgainControls" style="display:none">
     <button class="btn secondary" id="playAgainBtn">Try again with 10 new people →</button>
@@ -52,6 +51,9 @@
   </div>
 
   <div id="revealContent" style="display:none">
+    <div id="resultBanner"></div>
+    <ul class="results-list" id="resultsList"></ul>
+
     <div class="panel" id="chartPanel">
       <h3>The whole round, visually</h3>
       <div id="roundChart"></div>
@@ -133,6 +135,7 @@ const lock = initGameLock({
   unlockBtnEl: document.getElementById("unlockBtn"),
   lockErrorEl: document.getElementById("lockError"),
   contentEl: document.getElementById("revealContent"),
+  noteEl: document.getElementById("roundDoneNote"),
 });
 
 function loadStats() {
@@ -161,6 +164,7 @@ function startRound() {
   resultsListEl.innerHTML = "";
   roundChartEl.innerHTML = "";
   playAgainControlsEl.style.display = "none";
+  document.getElementById("roundDoneNote").style.display = "none";
   document.getElementById("lockPanel").style.display = "none";
   document.getElementById("revealContent").style.display = "none";
   decisionControlsEl.style.display = "flex";
@@ -255,6 +259,7 @@ function finishRound() {
   }, { N, chosenIdx });
 
   playAgainControlsEl.style.display = "flex";
+  document.getElementById("roundDoneNote").style.display = lock.isUnlocked() ? "none" : "block";
   lock.reveal();
 }
 

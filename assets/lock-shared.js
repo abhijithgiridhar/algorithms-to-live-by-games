@@ -3,9 +3,10 @@
 
 const GAME_PASSWORD = "67";
 
-// opts: { storageKey, lockPanelEl, passwordInputEl, unlockBtnEl, lockErrorEl, contentEl }
+// opts: { storageKey, lockPanelEl, passwordInputEl, unlockBtnEl, lockErrorEl, contentEl, noteEl }
+// noteEl (optional): a neutral "round complete, ask for the password" element hidden once unlocked.
 function initGameLock(opts) {
-  const { storageKey, lockPanelEl, passwordInputEl, unlockBtnEl, lockErrorEl, contentEl } = opts;
+  const { storageKey, lockPanelEl, passwordInputEl, unlockBtnEl, lockErrorEl, contentEl, noteEl } = opts;
 
   function isUnlocked() {
     return localStorage.getItem(storageKey) === "yes";
@@ -19,6 +20,7 @@ function initGameLock(opts) {
   function showUnlocked() {
     lockPanelEl.style.display = "none";
     contentEl.style.display = "block";
+    if (noteEl) noteEl.style.display = "none";
   }
 
   function attemptUnlock() {
@@ -42,5 +44,6 @@ function initGameLock(opts) {
       if (isUnlocked()) showUnlocked();
       else showLocked();
     },
+    isUnlocked,
   };
 }
