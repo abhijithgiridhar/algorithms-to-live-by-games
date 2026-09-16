@@ -1,0 +1,479 @@
+<title>Optimal Stopping Field Guide</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Public+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+:root{
+  --paper:#f7f2e7;
+  --panel:#fffcf5;
+  --ink:#241f16;
+  --muted:#726b5a;
+  --line:#e4dac2;
+  --accent:#c65a2e;
+  --accent-deep:#8a3c1a;
+  --accent-soft:#f1decb;
+  --good:#3f6b4f;
+  --good-soft:#e3ecdf;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#181510;
+    --panel:#211c14;
+    --ink:#f3ecdc;
+    --muted:#ab9f87;
+    --line:#392f21;
+    --accent:#e2823f;
+    --accent-deep:#f3a061;
+    --accent-soft:#3a2a1a;
+    --good:#8fbf9d;
+    --good-soft:#20281f;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#181510;
+  --panel:#211c14;
+  --ink:#f3ecdc;
+  --muted:#ab9f87;
+  --line:#392f21;
+  --accent:#e2823f;
+  --accent-deep:#f3a061;
+  --accent-soft:#3a2a1a;
+  --good:#8fbf9d;
+  --good-soft:#20281f;
+}
+
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Public Sans",system-ui,sans-serif;
+  line-height:1.6;
+}
+.wrap{max-width:920px;margin:0 auto;padding:2.5rem 1.25rem 5rem;}
+
+.stat{font-family:"IBM Plex Mono",monospace;}
+
+/* ---- masthead ---- */
+.masthead{
+  border-bottom:1px solid var(--line);
+  padding-bottom:1.75rem;
+  margin-bottom:2rem;
+}
+.eyebrow{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:0.72rem;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:var(--accent-deep);
+  margin:0 0 0.6rem;
+}
+h1.title{
+  font-family:"Fraunces",serif;
+  font-weight:600;
+  font-size:2.6rem;
+  line-height:1.05;
+  margin:0 0 0.5rem;
+  text-wrap:balance;
+}
+.masthead p{
+  color:var(--muted);
+  max-width:38rem;
+  margin:0.3rem 0;
+}
+.masthead-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:0.5rem;
+  margin-top:1.1rem;
+}
+.chip{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:0.75rem;
+  border:1px solid var(--line);
+  border-radius:999px;
+  padding:0.3rem 0.75rem;
+  color:var(--muted);
+  background:var(--panel);
+}
+
+/* ---- nav ---- */
+nav.jump{
+  display:flex;
+  gap:1.1rem;
+  flex-wrap:wrap;
+  margin:1.5rem 0 2.5rem;
+  padding:0.9rem 0;
+  border-bottom:1px solid var(--line);
+  font-family:"IBM Plex Mono",monospace;
+  font-size:0.78rem;
+}
+nav.jump a{
+  color:var(--muted);
+  text-decoration:none;
+  border-bottom:1px solid transparent;
+}
+nav.jump a:hover{color:var(--accent-deep);border-bottom-color:var(--accent-deep);}
+
+/* ---- section rhythm ---- */
+section{margin:3.2rem 0;}
+section > .num{
+  font-family:"Fraunces",serif;
+  font-style:italic;
+  color:var(--accent);
+  font-size:1rem;
+  display:block;
+  margin-bottom:0.2rem;
+}
+h2{
+  font-family:"Fraunces",serif;
+  font-weight:600;
+  font-size:1.9rem;
+  margin:0 0 0.9rem;
+  text-wrap:balance;
+}
+h3{
+  font-family:"Fraunces",serif;
+  font-weight:600;
+  font-size:1.25rem;
+  margin:1.6rem 0 0.6rem;
+}
+p{margin:0.7rem 0;}
+.lede{font-size:1.08rem;color:var(--ink);}
+ul,ol{padding-left:1.3rem;}
+li{margin:0.45rem 0;}
+strong{color:var(--accent-deep);}
+
+/* ---- pull quote from the book ---- */
+blockquote{
+  font-family:"Fraunces",serif;
+  font-style:italic;
+  font-size:1.15rem;
+  color:var(--ink);
+  border-left:3px solid var(--accent);
+  margin:1.3rem 0;
+  padding:0.2rem 0 0.2rem 1.2rem;
+}
+blockquote cite{
+  display:block;
+  font-family:"Public Sans",sans-serif;
+  font-style:normal;
+  font-size:0.8rem;
+  color:var(--muted);
+  margin-top:0.4rem;
+}
+
+/* ---- callout / cheat card ---- */
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:1.3rem 1.5rem;
+  margin:1.1rem 0;
+}
+.card.accent{
+  background:var(--accent-soft);
+  border-color:transparent;
+}
+.card.good{
+  background:var(--good-soft);
+  border-color:transparent;
+}
+.card h4{
+  margin:0 0 0.5rem;
+  font-family:"IBM Plex Mono",monospace;
+  font-size:0.78rem;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  color:var(--accent-deep);
+}
+.card.good h4{color:var(--good);}
+
+.password-face{
+  display:inline-flex;
+  align-items:center;
+  gap:0.6rem;
+  font-family:"IBM Plex Mono",monospace;
+  font-size:1.6rem;
+  font-weight:600;
+  background:var(--ink);
+  color:var(--paper);
+  border-radius:8px;
+  padding:0.35rem 0.9rem;
+  letter-spacing:0.08em;
+}
+
+/* ---- game trio ---- */
+.trio{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:0.9rem;
+  margin:1.2rem 0;
+}
+.trio .card{margin:0;}
+.trio .who{font-size:0.82rem;color:var(--muted);margin-top:0.3rem;}
+
+/* ---- schedule table ---- */
+.day-block{margin:1.6rem 0 2.4rem;}
+.day-label{
+  font-family:"IBM Plex Mono",monospace;
+  font-size:0.78rem;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  color:var(--accent-deep);
+  margin-bottom:0.5rem;
+}
+.schedule{
+  width:100%;
+  border-collapse:collapse;
+  font-size:0.92rem;
+}
+.schedule-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:10px;}
+.schedule th,.schedule td{
+  border:1px solid var(--line);
+  padding:0.85rem 0.9rem;
+  text-align:left;
+  vertical-align:top;
+}
+.schedule th{
+  background:var(--panel);
+  font-family:"IBM Plex Mono",monospace;
+  font-size:0.72rem;
+  letter-spacing:0.05em;
+  text-transform:uppercase;
+  color:var(--muted);
+  font-weight:600;
+}
+.schedule td.session{background:var(--panel);}
+.schedule td.break{
+  background:var(--accent-soft);
+  font-family:"IBM Plex Mono",monospace;
+  font-size:0.75rem;
+  text-align:center;
+  writing-mode:vertical-rl;
+  color:var(--accent-deep);
+  width:2.2rem;
+}
+.schedule .block-title{font-weight:600;display:block;margin-bottom:0.25rem;}
+.schedule .block-sub{color:var(--muted);font-size:0.85rem;}
+
+/* ---- checklist ---- */
+.checklist{list-style:none;padding:0;}
+.checklist li{
+  display:flex;
+  gap:0.7rem;
+  align-items:flex-start;
+  margin:0.65rem 0;
+}
+.checklist li::before{
+  content:"—";
+  color:var(--accent);
+  flex:none;
+}
+
+hr.rule{border:none;border-top:1px solid var(--line);margin:2.4rem 0;}
+
+footer{
+  margin-top:3rem;
+  padding-top:1.5rem;
+  border-top:1px solid var(--line);
+  color:var(--muted);
+  font-size:0.85rem;
+}
+
+@media (max-width:640px){
+  h1.title{font-size:2rem;}
+  .trio{grid-template-columns:1fr;}
+}
+</style>
+
+<div class="wrap">
+
+  <div class="masthead">
+    <p class="eyebrow">Field Guide · Chapter 1</p>
+    <h1 class="title">Optimal Stopping, Two Days In</h1>
+    <p class="lede">A facilitation guide for running the Rishta Hunt / Secretary / Rent Hunt trio, built to sit alongside <em>Algorithms to Live By</em> and a two-day classroom flow.</p>
+    <div class="masthead-meta">
+      <span class="chip">Book chapter 1 · Optimal Stopping</span>
+      <span class="chip">3 game skins, 1 shared rule</span>
+      <span class="chip">Answer key password: 67</span>
+    </div>
+  </div>
+
+  <nav class="jump">
+    <a href="#tldr">TL;DR</a>
+    <a href="#games">The three games</a>
+    <a href="#brief">Facilitation brief</a>
+    <a href="#flow">Two-day flow</a>
+    <a href="#everyone">For everyone</a>
+  </nav>
+
+  <section id="tldr">
+    <span class="num">I.</span>
+    <h2>TL;DR of the chapter</h2>
+    <p class="lede">Optimal stopping is the math of deciding when to stop looking and commit — when your options arrive one at a time, you must decide on the spot, and (usually) can't go back.</p>
+
+    <ul>
+      <li>The book's frame is the <strong>secretary problem</strong>: interview candidates one by one, decide immediately, no recall.</li>
+      <li>The solution is the <strong>Look-Then-Leap Rule</strong>: spend the first slice of your options purely calibrating — reject everyone, no matter how good — then commit to the very first person after that who beats everyone you've seen so far.</li>
+      <li>The size of that slice is <strong class="stat">37%</strong> (mathematically, 1/e). It holds whether the pool is 10 people or a million. Your odds of landing the single best option also converge to <span class="stat">37%</span> — the puzzle doesn't get harder as the pool grows, as long as you know the rule.</li>
+      <li>Change the assumptions, and the shape survives but the number moves:
+        <ul>
+          <li><strong>Rejection possible</strong> (they might say no) → start proposing sooner (~25% in).</li>
+          <li><strong>Recall allowed</strong> (you can go back) → look longer (~61%), with a fallback plan.</li>
+          <li><strong>Full information</strong> (you know real scores — a price, a percentile) → the look-phase disappears entirely. Use a <strong>Threshold Rule</strong> instead: accept anyone above a bar that gets more lenient as your remaining options shrink. Odds jump from 37% to 58%.</li>
+        </ul>
+      </li>
+      <li>The same shape reappears everywhere: selling a house (never look back — it's a sunk cost), parking (leap sooner in emptier lots), quitting a winning streak (optimal tries ≈ odds of success ÷ odds of getting caught).</li>
+      <li>Real people stop earlier than 37% — studies land around 25–31%. Not because we're bad at math: searching has a real, felt cost the classical puzzle doesn't price in. Getting impatient isn't irrational, it's just hard to model.</li>
+    </ul>
+
+    <blockquote>
+      "The therapist tells them to find the right, comfortable balance between impulsivity and overthinking. The algorithm tells them the balance is thirty-seven percent."
+      <cite>— Brian Christian &amp; Tom Griffiths, <em>Algorithms to Live By</em></cite>
+    </blockquote>
+  </section>
+
+  <section id="games">
+    <span class="num">II.</span>
+    <h2>Three skins, one algorithm</h2>
+    <p>All three games run the identical no-information secretary problem underneath. That repetition is the point — it's the abstraction lesson: same rule, different costume.</p>
+
+    <div class="trio">
+      <div class="card">
+        <h4>💍 Rishta Hunt</h4>
+        <p style="margin:0">Meet 10 people, one at a time. Propose, or move on — no going back.</p>
+        <p class="who">Yours · atriauniversity site</p>
+      </div>
+      <div class="card">
+        <h4>📋 Secretary</h4>
+        <p style="margin:0">Interview 10 applicants for an office role. Hire, or see the next.</p>
+        <p class="who">Yours · the puzzle's original name</p>
+      </div>
+      <div class="card">
+        <h4>🏠 Rent Hunt</h4>
+        <p style="margin:0">Tour 10 flats, real currencies. Take one, or keep looking.</p>
+        <p class="who">A colleague's — opens on another site</p>
+      </div>
+    </div>
+    <p style="font-size:0.9rem;color:var(--muted)">Every reveal (chart, plain-language rule, and real code) sits behind the same class password so no group can peek ahead of the others.</p>
+  </section>
+
+  <section id="brief">
+    <span class="num">III.</span>
+    <h2>Facilitation brief — what to say, and when</h2>
+
+    <h3>Before anyone plays</h3>
+    <p>State only the rules — see one option at a time, decide now, no revisiting a rejected one. Don't say "algorithm," "37%," or "optimal" yet. Let the tension between too-eager and too-picky show up as a felt problem before it gets a name.</p>
+
+    <h3>While they play</h3>
+    <ul class="checklist">
+      <li>Have each student <strong>write down their personal rule</strong> before comparing notes — "I always took the 3rd one," "I waited for anything above 80." This is what makes the reveal land: they're checking their own instinct against the math, not just receiving it.</li>
+      <li><strong>Rotate in small groups</strong> (3–4 students), ~8–10 minutes per skin, Rishta → Secretary → Rent Hunt. Fast finishers replay a skin for a better score instead of sitting idle — a built-in pacing device for mixed-speed rooms.</li>
+      <li>Keep the password unrevealed through every rotation. No group should be ahead of another on the reveal.</li>
+    </ul>
+
+    <h3>The reveal moment</h3>
+    <p>Before typing the password, collect a few personal rules on the board and pattern-match them against "look at roughly a third first." <em>Then</em> unlock:</p>
+    <div class="card accent">
+      <h4>Class password</h4>
+      <span class="password-face">67</span>
+      <p style="margin-top:0.7rem">Unlocks the chart, the plain-language Look-Then-Leap rule, and the real Python code — identically on all three games, in that browser.</p>
+    </div>
+    <p>Debrief with two questions, echoing the same rhythm as your unplugged warm-ups: <em>"Was this similar to the card games we played earlier?"</em> and <em>"Who got close to the 37% cutoff without knowing it?"</em></p>
+  </section>
+
+  <section id="flow">
+    <span class="num">IV.</span>
+    <h2>A two-day flow</h2>
+    <p>Same rhythm as a normal teaching day — three blocks, split by a coffee break and lunch — built around feeling the problem on Day 1 and owning the math on Day 2.</p>
+
+    <div class="day-block">
+      <p class="day-label">Day 1 — Feeling the problem</p>
+      <div class="schedule-scroll">
+        <table class="schedule">
+          <tr>
+            <th style="width:22%">Before coffee</th>
+            <th style="width:2%"></th>
+            <th style="width:38%">Before lunch</th>
+            <th style="width:2%"></th>
+            <th style="width:36%">After lunch</th>
+          </tr>
+          <tr>
+            <td class="session">
+              <span class="block-title">Unplugged warm-up</span>
+              <span class="block-sub">"Numbers!" (largest card) + "Funniest Meme" judge game. No computers, no vocabulary yet.</span>
+            </td>
+            <td class="break">COFFEE</td>
+            <td class="session">
+              <span class="block-title">Name it: Optimal Stopping</span>
+              <span class="block-sub">Debrief the warm-ups (Section A/B style questions) → short lecture introducing the secretary problem → first digital round: Rishta Hunt, password locked.</span>
+            </td>
+            <td class="break">LUNCH</td>
+            <td class="session">
+              <span class="block-title">Rotate + reveal</span>
+              <span class="block-sub">Small-group rotation through Secretary and Rent Hunt. Collect strategies on the board, then unlock with 67 — rule, chart, code.</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="day-block">
+      <p class="day-label">Day 2 — Owning the math</p>
+      <div class="schedule-scroll">
+        <table class="schedule">
+          <tr>
+            <th style="width:22%">Before coffee</th>
+            <th style="width:2%"></th>
+            <th style="width:38%">Before lunch</th>
+            <th style="width:2%"></th>
+            <th style="width:36%">After lunch</th>
+          </tr>
+          <tr>
+            <td class="session">
+              <span class="block-title">37% Rule, by hand</span>
+              <span class="block-sub">Worked examples from the book's table (n = 3…1000). Quick practice: "8 candidates — when do you start leaping?"</span>
+            </td>
+            <td class="break">COFFEE</td>
+            <td class="session">
+              <span class="block-title">Beyond 37%</span>
+              <span class="block-sub">Contrast no-information games (all three skins) with full-information games (Threshold Rule) using the house-selling and exam-percentile examples. Replay one skin with "what if you knew the real scores?"</span>
+            </td>
+            <td class="break">LUNCH</td>
+            <td class="session">
+              <span class="block-title">Domain research + presentations</span>
+              <span class="block-sub">Groups pick a real domain and chart-paper a presentation — see prompts below.</span>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <h3>Domain prompts for the closing presentations</h3>
+    <p>Each keeps the same question alive: <em>is this a look-then-leap game, or a threshold game — and why?</em></p>
+    <ul>
+      <li><strong>eMobility</strong> — when should a delivery rider stop circling for a closer charging bay?</li>
+      <li><strong>Life sciences</strong> — when should a clinical trial stop enrolling and lock its results?</li>
+      <li><strong>Dating apps</strong> — swipe culture vs. the classical secretary problem: does infinite recall break the math?</li>
+      <li><strong>Cricket auctions</strong> — an IPL franchise bidding against a fixed purse, one player at a time.</li>
+      <li><strong>Organ allocation</strong> — a patient deciding whether to accept an offered organ or wait for a better match.</li>
+      <li><strong>Startup exits</strong> — a founder fielding acquisition offers with a ticking cap-table clock.</li>
+    </ul>
+  </section>
+
+  <section id="everyone">
+    <span class="num">V.</span>
+    <h2>Making it land for everyone</h2>
+    <ul class="checklist">
+      <li><strong>Mixed pace:</strong> the rotation-with-replay structure already absorbs speed differences — fast players replay for a better score, not new content, so nobody's idle and nobody's rushed.</li>
+      <li><strong>Quieter students:</strong> writing down a personal rule before any group talk means everyone has already "spoken" before speaking is required.</li>
+      <li><strong>Multiple entry points:</strong> the same idea hits kinesthetic (unplugged cards), visual (the chart), symbolic (the code), and narrative (Kepler's eleven courtships, Michael Trick's proposal) learners at least once each.</li>
+      <li><strong>Discovery over lookup:</strong> the password gate isn't just pacing — it enforces "figure it out before you're told," in keeping with wanting less AI-assisted shortcut-taking and more of the class actually deriving the rule.</li>
+      <li><strong>One clean formative check</strong> before Day 2 starts: exit ticket — <em>"In one sentence, what should you never do in this game, and why?"</em> (Answer: never leap inside the look phase; never revisit a rejected option.)</li>
+    </ul>
+  </section>
+
+  <footer>
+    Built alongside the class site at <span class="stat">algorithms-to-live-by-games</span> — Rishta Hunt, Secretary, and a link out to Rent Hunt. Password 67 unlocks the reveal on every game, in every browser it's entered.
+  </footer>
+
+</div>
