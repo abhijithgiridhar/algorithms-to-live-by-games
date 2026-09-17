@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Arcade Challenge — Algorithms to Live By</title>
+<link rel="stylesheet" href="../../assets/style.css">
+<link rel="stylesheet" href="arcade.css">
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../../index.html">&larr; All games</a>
+
+  <header class="page-head">
+    <h1>🕹️ The Arcade Challenge</h1>
+    <p>Chapter 2 · Explore / Exploit</p>
+  </header>
+
+  <!-- ===== START SCREEN ===== -->
+  <div class="start-screen" id="startScreen">
+    <p style="font-size:1.05rem">You've got <strong>25 minutes</strong> and <strong>3 games</strong>: Dino Jump, Space Shooter, and Pinball.</p>
+    <p>Switch between them any time you like, as often as you like. Your score is the total across all three — try to end with as many points as possible.</p>
+    <p style="color:var(--muted);font-style:italic">Some games might be worth more points per minute than others... but you'll have to find that out for yourself.</p>
+    <input type="text" id="nameInput" placeholder="Your name">
+    <div>
+      <button class="btn" id="startBtn">Start my 25 minutes →</button>
+    </div>
+  </div>
+
+  <!-- ===== PLAY SCREEN ===== -->
+  <div id="playScreen" style="display:none">
+    <div class="arcade-header">
+      <div class="arcade-stat">
+        <span class="num" id="playerNameDisplay">—</span>
+        <span class="label">Player</span>
+      </div>
+      <div class="arcade-stat timer" id="timerStat">
+        <span class="num" id="timerDisplay">25:00</span>
+        <span class="label">Time left</span>
+      </div>
+      <div class="arcade-stat">
+        <span class="num" id="totalScoreDisplay">0</span>
+        <span class="label">Total score</span>
+      </div>
+    </div>
+
+    <div class="arcade-tabs">
+      <button class="arcade-tab" data-game="dino">🦖 Dino Jump</button>
+      <button class="arcade-tab" data-game="shooter">🚀 Space Shooter</button>
+      <button class="arcade-tab" data-game="pinball">🕹️ Pinball</button>
+    </div>
+
+    <div class="arcade-stage" id="stageWrap"></div>
+    <p class="arcade-help" id="helpText"></p>
+
+    <div class="controls">
+      <button class="btn secondary" id="endEarlyBtn">End session early</button>
+    </div>
+  </div>
+
+  <!-- ===== END SCREEN ===== -->
+  <div class="end-overlay" id="endScreen" style="display:none">
+    <h2>⏰ Time's up, <span id="endName">—</span>!</h2>
+    <div class="final-score-num" id="finalScore">0</div>
+    <div class="write-down-note">✍️ Write this number down and tell your teacher — an award's on the line!</div>
+
+    <div id="breakdownList"></div>
+
+    <div class="controls">
+      <button class="btn secondary" id="playAgainBtn">Play again →</button>
+    </div>
+
+    <p class="date-counter" id="roundDoneNote" style="display:none">Want to see why some games scored better? Ask your teacher for the password.</p>
+
+    <div class="panel lock-panel" id="lockPanel" style="display:none">
+      <div class="lock-icon">🔒</div>
+      <h3>Ready to see how it's really done?</h3>
+      <p>Ask your teacher for the password once everyone's had a go.</p>
+      <div class="controls">
+        <input type="password" class="password-input" id="passwordInput" placeholder="Password">
+        <button class="btn" id="unlockBtn">Unlock</button>
+      </div>
+      <p class="lock-error" id="lockError" style="display:none">Not quite — try again.</p>
+    </div>
+
+    <div id="revealContent" style="display:none">
+      <div class="panel" id="explainer" style="text-align:left">
+        <h3>Chapter 2: Explore / Exploit</h3>
+        <p>Every one of these three games was secretly worth a <strong>different number of points per hit</strong> — and that multiplier was reshuffled for every single player. You had no way to know which was best except by actually playing all three.</p>
+        <p>This is exactly the dilemma computer scientists call the <strong>multi-armed bandit problem</strong>: you have several options with unknown payoffs, limited time, and every minute spent testing one option is a minute not spent cashing in on whatever you already know works. Spend too long exploring, and you waste your remaining time on games you already knew weren't great. Commit too early, and you might be grinding the worst one the whole time.</p>
+        <ol class="steps-list">
+          <li><strong>Explore</strong> early — try all three games briefly to get a feel for which one is paying out best.</li>
+          <li><strong>Exploit</strong> once you're fairly confident — spend most of your remaining time on your current best guess.</li>
+          <li>The less time you have left, the less exploring makes sense — a bad decision now has less time to be corrected.</li>
+        </ol>
+        <p id="yourMultipliers" style="font-style:italic"></p>
+        <hr class="divider">
+        <p style="font-size:0.85rem;color:var(--muted)"><strong>Where you see it:</strong> a streaming app deciding whether to recommend your favourite genre again or try something new. A doctor choosing a well-known treatment vs. a promising new one. A restaurant-goer deciding between their usual order and today's special.</p>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-foot">Game for Chapter 2 · Explore / Exploit — inspired by <em>Algorithms to Live By</em>.</footer>
+</div>
+
+<script src="../../assets/lock-shared.js"></script>
+<script src="dino.js"></script>
+<script src="shooter.js"></script>
+<script src="pinball.js"></script>
+<script>
+const GAMES = {
+  dino: { label: "🦖 Dino Jump", help: "Press Space, tap, or click to jump over the cacti.", w: 800, h: 300 },
+  shooter: { label: "🚀 Space Shooter", help: "Move with the arrow keys, or drag your finger/mouse. Your ship fires on its own.", w: 800, h: 500 },
+  pinball: { label: "🕹️ Pinball", help: "Left flipper: Z or ←. Right flipper: / or →. Or use the buttons below on a touch screen.", w: 500, h: 700 },
+};
+const SESSION_SECONDS = 25 * 60;
+
+let playerName = "";
+let totalScore = 0;
+let perGame = { dino: 0, shooter: 0, pinball: 0 };
+let multipliers = {};
+let activeGame = null;
+let currentModule = null;
+let timeLeft = SESSION_SECONDS;
+let timerId = null;
+
+const startScreen = document.getElementById("startScreen");
+const playScreen = document.getElementById("playScreen");
+const endScreen = document.getElementById("endScreen");
+const nameInput = document.getElementById("nameInput");
+const startBtn = document.getElementById("startBtn");
+const playerNameDisplay = document.getElementById("playerNameDisplay");
+const timerDisplay = document.getElementById("timerDisplay");
+const timerStat = document.getElementById("timerStat");
+const totalScoreDisplay = document.getElementById("totalScoreDisplay");
+const stageWrap = document.getElementById("stageWrap");
+const helpText = document.getElementById("helpText");
+const endEarlyBtn = document.getElementById("endEarlyBtn");
+const endName = document.getElementById("endName");
+const finalScoreEl = document.getElementById("finalScore");
+const breakdownListEl = document.getElementById("breakdownList");
+const playAgainBtn = document.getElementById("playAgainBtn");
+
+const lock = initGameLock({
+  game: "arcade",
+  lockPanelEl: document.getElementById("lockPanel"),
+  passwordInputEl: document.getElementById("passwordInput"),
+  unlockBtnEl: document.getElementById("unlockBtn"),
+  lockErrorEl: document.getElementById("lockError"),
+  contentEl: document.getElementById("revealContent"),
+  noteEl: document.getElementById("roundDoneNote"),
+});
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function formatTime(sec) {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function awardPoints(gameId, basePoints) {
+  const pts = Math.round(basePoints * multipliers[gameId]);
+  totalScore = Math.max(0, totalScore + pts);
+  perGame[gameId] = Math.max(0, perGame[gameId] + pts);
+  totalScoreDisplay.textContent = totalScore;
+}
+
+function stopCurrent() {
+  if (currentModule) currentModule.stop();
+  currentModule = null;
+  stageWrap.innerHTML = "";
+}
+
+function switchTab(gameId) {
+  stopCurrent();
+  activeGame = gameId;
+  document.querySelectorAll(".arcade-tab").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.game === gameId);
+  });
+  helpText.textContent = GAMES[gameId].help;
+
+  const canvas = document.createElement("canvas");
+  stageWrap.appendChild(canvas);
+
+  const scoreCb = (pts) => awardPoints(gameId, pts);
+
+  if (gameId === "dino") {
+    currentModule = window.ArcadeDino;
+    currentModule.start(canvas, scoreCb);
+  } else if (gameId === "shooter") {
+    currentModule = window.ArcadeShooter;
+    currentModule.start(canvas, scoreCb);
+  } else {
+    const padWrap = document.createElement("div");
+    padWrap.className = "on-screen-controls";
+    const leftBtn = document.createElement("button");
+    leftBtn.className = "control-pad-btn";
+    leftBtn.textContent = "◀";
+    leftBtn.type = "button";
+    const rightBtn = document.createElement("button");
+    rightBtn.className = "control-pad-btn";
+    rightBtn.textContent = "▶";
+    rightBtn.type = "button";
+    padWrap.appendChild(leftBtn);
+    padWrap.appendChild(rightBtn);
+    stageWrap.appendChild(padWrap);
+
+    currentModule = window.ArcadePinball;
+    currentModule.start(canvas, scoreCb, { leftBtn, rightBtn });
+  }
+}
+
+document.querySelectorAll(".arcade-tab").forEach((btn) => {
+  btn.addEventListener("click", () => switchTab(btn.dataset.game));
+});
+
+function tick() {
+  timeLeft -= 1;
+  timerDisplay.textContent = formatTime(Math.max(0, timeLeft));
+  timerStat.classList.toggle("low", timeLeft <= 60);
+  if (timeLeft <= 0) endSession();
+}
+
+function startSession() {
+  playerName = nameInput.value.trim() || "Player";
+  totalScore = 0;
+  perGame = { dino: 0, shooter: 0, pinball: 0 };
+  const levels = shuffle([0.6, 1.0, 1.8]);
+  multipliers = { dino: levels[0], shooter: levels[1], pinball: levels[2] };
+  timeLeft = SESSION_SECONDS;
+
+  playerNameDisplay.textContent = playerName;
+  totalScoreDisplay.textContent = "0";
+  timerDisplay.textContent = formatTime(timeLeft);
+  timerStat.classList.remove("low");
+
+  startScreen.style.display = "none";
+  endScreen.style.display = "none";
+  playScreen.style.display = "block";
+
+  switchTab("dino");
+  timerId = setInterval(tick, 1000);
+}
+
+function endSession() {
+  clearInterval(timerId);
+  timerId = null;
+  stopCurrent();
+  playScreen.style.display = "none";
+  endScreen.style.display = "block";
+
+  endName.textContent = playerName;
+  finalScoreEl.textContent = totalScore;
+  breakdownListEl.innerHTML = "";
+  Object.entries(GAMES).forEach(([id, g]) => {
+    const row = document.createElement("div");
+    row.className = "breakdown-row";
+    row.innerHTML = `<span>${g.label}</span><span><strong>${perGame[id]}</strong></span>`;
+    breakdownListEl.appendChild(row);
+  });
+
+  document.getElementById("yourMultipliers").textContent =
+    `Your hidden multipliers this round: Dino Jump ×${multipliers.dino}, Space Shooter ×${multipliers.shooter}, Pinball ×${multipliers.pinball}.`;
+
+  document.getElementById("roundDoneNote").style.display = lock.isUnlocked() ? "none" : "block";
+  lock.reveal();
+}
+
+startBtn.addEventListener("click", startSession);
+nameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") startSession(); });
+endEarlyBtn.addEventListener("click", () => {
+  if (confirm("End your session now? Your final score will be locked in.")) endSession();
+});
+playAgainBtn.addEventListener("click", () => {
+  endScreen.style.display = "none";
+  startScreen.style.display = "block";
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+.arcade-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.75rem 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.arcade-stat { text-align: center; }
+.arcade-stat .num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+.arcade-stat .label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.arcade-stat.timer .num { color: var(--ink); }
+.arcade-stat.timer.low .num { color: var(--bad); }
+
+.arcade-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.arcade-tab {
+  font: inherit;
+  background: var(--panel);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 0.6rem 1.1rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.arcade-tab.active {
+  border-color: var(--accent);
+  background: #f6e9e8;
+  color: var(--accent);
+}
+
+.arcade-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 auto 1rem;
+}
+
+.arcade-stage canvas {
+  max-width: 100%;
+  background: #10141c;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  touch-action: none;
+  display: block;
+}
+
+.arcade-help {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: -0.5rem 0 1.5rem;
+}
+
+.start-screen, .end-overlay {
+  text-align: center;
+  max-width: 32rem;
+  margin: 2rem auto;
+}
+
+.start-screen input[type="text"] {
+  font: inherit;
+  font-size: 1.1rem;
+  padding: 0.7rem 1rem;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  width: 100%;
+  max-width: 20rem;
+  text-align: center;
+  margin: 1rem 0;
+}
+
+.final-score-num {
+  font-size: 4.5rem;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+  margin: 0.5rem 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0.9rem;
+  border-radius: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  margin: 0.4rem 0;
+  font-size: 0.95rem;
+}
+
+.write-down-note {
+  background: #fbf0ce;
+  border: 1px solid #e3c65c;
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  font-weight: 600;
+  margin: 1.2rem 0;
+}
+
+.on-screen-controls {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin: 0.75rem 0 1.5rem;
+}
+
+.control-pad-btn {
+  font-size: 1.6rem;
+  width: 3.2rem;
+  height: 3.2rem;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--panel);
+  cursor: pointer;
+  user-select: none;
+}
+
+.control-pad-btn:active { background: #f6e9e8; border-color: var(--accent); }
