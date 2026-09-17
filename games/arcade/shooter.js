@@ -15,7 +15,7 @@ window.ArcadeShooter = (function () {
     divers = [];
     fireTimer = 0;
     spawnTimer = 0;
-    diverTimer = 90;
+    diverTimer = 70;
     elapsed = 0;
     hitFlash = 0;
     lives = startingLives;
@@ -27,7 +27,11 @@ window.ArcadeShooter = (function () {
   }
 
   function spawnDiver() {
-    divers.push({ x: Math.random() * W, y: -20, w: 24, h: 24, vy: 2.4 + Math.min(2.5, elapsed / 900) });
+    divers.push({ x: Math.random() * W, y: -20, w: 24, h: 24, vy: 3.2 + Math.min(3.5, elapsed / 500) });
+    // once things have been going a while, sometimes send a second diver right behind the first
+    if (elapsed > 400 && Math.random() < 0.4) {
+      divers.push({ x: Math.random() * W, y: -70, w: 24, h: 24, vy: 3.2 + Math.min(3.5, elapsed / 500) });
+    }
   }
 
   function loseLife() {
@@ -64,7 +68,7 @@ window.ArcadeShooter = (function () {
     diverTimer -= 1;
     if (diverTimer <= 0) {
       spawnDiver();
-      diverTimer = Math.max(55, 110 - elapsed / 150);
+      diverTimer = Math.max(32, 85 - elapsed / 120);
     }
 
     for (let i = bullets.length - 1; i >= 0; i--) {
@@ -90,11 +94,12 @@ window.ArcadeShooter = (function () {
       }
     }
 
-    const shipTop = H - 70, shipBottom = H - 46, shipLeft = ship.x - ship.w / 2, shipRight = ship.x + ship.w / 2;
+    const shipTop = H - 85, shipBottom = H - 40, shipLeft = ship.x - ship.w / 2 - 6, shipRight = ship.x + ship.w / 2 + 6;
     for (let i = divers.length - 1; i >= 0; i--) {
       const d = divers[i];
       d.y += d.vy;
-      d.x += (ship.x - d.x) * 0.01;
+      // homes in hard on the ship's current x -- has to actually be dodged, not just outrun
+      d.x += (ship.x - d.x) * 0.05;
 
       let hit = false;
       for (let j = bullets.length - 1; j >= 0; j--) {

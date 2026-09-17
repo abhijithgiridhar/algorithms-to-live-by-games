@@ -18,7 +18,7 @@
 
   <!-- ===== START SCREEN ===== -->
   <div class="start-screen" id="startScreen">
-    <p style="font-size:1.05rem">You've got <strong>10 minutes</strong> and <strong>3 games</strong>: Dino Jump, Space Shooter, and Pong.</p>
+    <p style="font-size:1.05rem">You've got <strong>10 minutes</strong> and <strong>3 games</strong>: Dino Jump, Space Shooter, and Flappy Bird.</p>
     <p>Switch between them any time you like, as often as you like. Your score is the total across all three — try to end with as many points as possible.</p>
     <p style="color:var(--muted);font-style:italic">Some games might be worth more points per minute than others... but you'll have to find that out for yourself.</p>
     <input type="text" id="nameInput" placeholder="Your name">
@@ -47,7 +47,7 @@
     <div class="arcade-tabs">
       <button class="arcade-tab" data-game="dino">🦖 Dino Jump</button>
       <button class="arcade-tab" data-game="shooter">🚀 Space Shooter</button>
-      <button class="arcade-tab" data-game="pong">🏓 Pong</button>
+      <button class="arcade-tab" data-game="flappy">🐦 Flappy Bird</button>
     </div>
 
     <div class="arcade-stage" id="stageWrap"></div>
@@ -110,12 +110,12 @@
 <script src="../../assets/lock-shared.js"></script>
 <script src="dino.js"></script>
 <script src="shooter.js"></script>
-<script src="pong.js"></script>
+<script src="flappy.js"></script>
 <script>
 const GAMES = {
   dino: { label: "🦖 Dino Jump", help: "Press Space, tap, or click to jump over the cacti. 3 lives — a hit costs one.", module: () => window.ArcadeDino },
   shooter: { label: "🚀 Space Shooter", help: "Move with the arrow keys, or drag your finger/mouse. Your ship fires on its own — dodge the red divers or shoot them, they cost a life on contact. 3 lives.", module: () => window.ArcadeShooter },
-  pong: { label: "🏓 Pong", help: "Move with the arrow keys, or drag your finger/mouse. The ball speeds up (and your paddle shrinks) the longer you rally. Missing costs a life. 3 lives.", module: () => window.ArcadePong },
+  flappy: { label: "🐦 Flappy Bird", help: "Press Space, tap, or click to flap. Thread the gaps — hitting a pipe, the ceiling, or the floor costs a life. Gaps get tighter and faster over time. 3 lives.", module: () => window.ArcadeFlappy },
 };
 const SESSION_SECONDS = 10 * 60;
 const RESULT_KEY = "atlb_arcade_result";
@@ -123,10 +123,10 @@ const MAX_LIVES = 3;
 
 let playerName = "";
 let totalScore = 0;
-let perGame = { dino: 0, shooter: 0, pong: 0 };
-let gameSeconds = { dino: 0, shooter: 0, pong: 0 };
-let lives = { dino: MAX_LIVES, shooter: MAX_LIVES, pong: MAX_LIVES };
-let runScore = { dino: 0, shooter: 0, pong: 0 };
+let perGame = { dino: 0, shooter: 0, flappy: 0 };
+let gameSeconds = { dino: 0, shooter: 0, flappy: 0 };
+let lives = { dino: MAX_LIVES, shooter: MAX_LIVES, flappy: MAX_LIVES };
+let runScore = { dino: 0, shooter: 0, flappy: 0 };
 let multipliers = {};
 let activeGame = null;
 let currentModule = null;
@@ -272,12 +272,12 @@ function startSession() {
   localStorage.removeItem(RESULT_KEY);
   playerName = nameInput.value.trim() || "Player";
   totalScore = 0;
-  perGame = { dino: 0, shooter: 0, pong: 0 };
-  gameSeconds = { dino: 0, shooter: 0, pong: 0 };
-  lives = { dino: MAX_LIVES, shooter: MAX_LIVES, pong: MAX_LIVES };
-  runScore = { dino: 0, shooter: 0, pong: 0 };
+  perGame = { dino: 0, shooter: 0, flappy: 0 };
+  gameSeconds = { dino: 0, shooter: 0, flappy: 0 };
+  lives = { dino: MAX_LIVES, shooter: MAX_LIVES, flappy: MAX_LIVES };
+  runScore = { dino: 0, shooter: 0, flappy: 0 };
   const levels = shuffle([0.6, 1.0, 1.8]);
-  multipliers = { dino: levels[0], shooter: levels[1], pong: levels[2] };
+  multipliers = { dino: levels[0], shooter: levels[1], flappy: levels[2] };
   timeLeft = SESSION_SECONDS;
 
   playerNameDisplay.textContent = playerName;
@@ -307,7 +307,7 @@ function renderEndScreen(result) {
   });
 
   document.getElementById("yourMultipliers").textContent =
-    `Your hidden multipliers this round: Dino Jump ×${result.multipliers.dino}, Space Shooter ×${result.multipliers.shooter}, Pong ×${result.multipliers.pong}.`;
+    `Your hidden multipliers this round: Dino Jump ×${result.multipliers.dino}, Space Shooter ×${result.multipliers.shooter}, Flappy Bird ×${result.multipliers.flappy}.`;
 
   const rates = Object.keys(GAMES)
     .filter((id) => result.gameSeconds[id] > 0)
