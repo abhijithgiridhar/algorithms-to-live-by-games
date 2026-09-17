@@ -18,12 +18,12 @@
 
   <!-- ===== START SCREEN ===== -->
   <div class="start-screen" id="startScreen">
-    <p style="font-size:1.05rem">You've got <strong>25 minutes</strong> and <strong>3 games</strong>: Dino Jump, Space Shooter, and Pinball.</p>
+    <p style="font-size:1.05rem">You've got <strong>10 minutes</strong> and <strong>3 games</strong>: Dino Jump, Space Shooter, and Pong.</p>
     <p>Switch between them any time you like, as often as you like. Your score is the total across all three — try to end with as many points as possible.</p>
     <p style="color:var(--muted);font-style:italic">Some games might be worth more points per minute than others... but you'll have to find that out for yourself.</p>
     <input type="text" id="nameInput" placeholder="Your name">
     <div>
-      <button class="btn" id="startBtn">Start my 25 minutes →</button>
+      <button class="btn" id="startBtn">Start my 10 minutes →</button>
     </div>
   </div>
 
@@ -47,7 +47,7 @@
     <div class="arcade-tabs">
       <button class="arcade-tab" data-game="dino">🦖 Dino Jump</button>
       <button class="arcade-tab" data-game="shooter">🚀 Space Shooter</button>
-      <button class="arcade-tab" data-game="pinball">🕹️ Pinball</button>
+      <button class="arcade-tab" data-game="pong">🏓 Pong</button>
     </div>
 
     <div class="arcade-stage" id="stageWrap"></div>
@@ -95,6 +95,10 @@
         </ol>
         <p id="yourMultipliers" style="font-style:italic"></p>
         <hr class="divider">
+        <h3>Your regret, quantified</h3>
+        <p>Computer scientists call the gap between what you actually scored and what you <em>could</em> have scored (if you'd known the best game from second one) your <strong>regret</strong>. You can't get it to zero — some exploring is always necessary — but a good strategy keeps it small.</p>
+        <p id="regretExplain" style="font-style:italic"></p>
+        <hr class="divider">
         <p style="font-size:0.85rem;color:var(--muted)"><strong>Where you see it:</strong> a streaming app deciding whether to recommend your favourite genre again or try something new. A doctor choosing a well-known treatment vs. a promising new one. A restaurant-goer deciding between their usual order and today's special.</p>
       </div>
     </div>
@@ -106,18 +110,20 @@
 <script src="../../assets/lock-shared.js"></script>
 <script src="dino.js"></script>
 <script src="shooter.js"></script>
-<script src="pinball.js"></script>
+<script src="pong.js"></script>
 <script>
 const GAMES = {
   dino: { label: "🦖 Dino Jump", help: "Press Space, tap, or click to jump over the cacti.", w: 800, h: 300 },
   shooter: { label: "🚀 Space Shooter", help: "Move with the arrow keys, or drag your finger/mouse. Your ship fires on its own.", w: 800, h: 500 },
-  pinball: { label: "🕹️ Pinball", help: "Left flipper: Z or ←. Right flipper: / or →. Or use the buttons below on a touch screen.", w: 500, h: 700 },
+  pong: { label: "🏓 Pong", help: "Move with the arrow keys, or drag your finger/mouse. Return the ball to score.", w: 800, h: 500 },
 };
-const SESSION_SECONDS = 25 * 60;
+const SESSION_SECONDS = 10 * 60;
+const RESULT_KEY = "atlb_arcade_result";
 
 let playerName = "";
 let totalScore = 0;
-let perGame = { dino: 0, shooter: 0, pinball: 0 };
+let perGame = { dino: 0, shooter: 0, pong: 0 };
+let gameSeconds = { dino: 0, shooter: 0, pong: 0 };
 let multipliers = {};
 let activeGame = null;
 let currentModule = null;
@@ -194,28 +200,12 @@ function switchTab(gameId) {
 
   if (gameId === "dino") {
     currentModule = window.ArcadeDino;
-    currentModule.start(canvas, scoreCb);
   } else if (gameId === "shooter") {
     currentModule = window.ArcadeShooter;
-    currentModule.start(canvas, scoreCb);
   } else {
-    const padWrap = document.createElement("div");
-    padWrap.className = "on-screen-controls";
-    const leftBtn = document.createElement("button");
-    leftBtn.className = "control-pad-btn";
-    leftBtn.textContent = "◀";
-    leftBtn.type = "button";
-    const rightBtn = document.createElement("button");
-    rightBtn.className = "control-pad-btn";
-    rightBtn.textContent = "▶";
-    rightBtn.type = "button";
-    padWrap.appendChild(leftBtn);
-    padWrap.appendChild(rightBtn);
-    stageWrap.appendChild(padWrap);
-
-    currentModule = window.ArcadePinball;
-    currentModule.start(canvas, scoreCb, { leftBtn, rightBtn });
+    currentModule = window.ArcadePong;
   }
+  currentModule.start(canvas, scoreCb);
 }
 
 document.querySelectorAll(".arcade-tab").forEach((btn) => {
@@ -224,17 +214,20 @@ document.querySelectorAll(".arcade-tab").forEach((btn) => {
 
 function tick() {
   timeLeft -= 1;
+  gameSeconds[activeGame] += 1;
   timerDisplay.textContent = formatTime(Math.max(0, timeLeft));
   timerStat.classList.toggle("low", timeLeft <= 60);
   if (timeLeft <= 0) endSession();
 }
 
 function startSession() {
+  localStorage.removeItem(RESULT_KEY);
   playerName = nameInput.value.trim() || "Player";
   totalScore = 0;
-  perGame = { dino: 0, shooter: 0, pinball: 0 };
+  perGame = { dino: 0, shooter: 0, pong: 0 };
+  gameSeconds = { dino: 0, shooter: 0, pong: 0 };
   const levels = shuffle([0.6, 1.0, 1.8]);
-  multipliers = { dino: levels[0], shooter: levels[1], pinball: levels[2] };
+  multipliers = { dino: levels[0], shooter: levels[1], pong: levels[2] };
   timeLeft = SESSION_SECONDS;
 
   playerNameDisplay.textContent = playerName;
@@ -250,28 +243,49 @@ function startSession() {
   timerId = setInterval(tick, 1000);
 }
 
-function endSession() {
-  clearInterval(timerId);
-  timerId = null;
-  stopCurrent();
-  playScreen.style.display = "none";
-  endScreen.style.display = "block";
-
-  endName.textContent = playerName;
-  finalScoreEl.textContent = totalScore;
+function renderEndScreen(result) {
+  endName.textContent = result.playerName;
+  finalScoreEl.textContent = result.totalScore;
   breakdownListEl.innerHTML = "";
   Object.entries(GAMES).forEach(([id, g]) => {
+    const secs = result.gameSeconds[id];
+    const rate = secs > 0 ? (result.perGame[id] / secs * 60).toFixed(1) : "—";
     const row = document.createElement("div");
     row.className = "breakdown-row";
-    row.innerHTML = `<span>${g.label}</span><span><strong>${perGame[id]}</strong></span>`;
+    row.innerHTML = `<span>${g.label} <span style="color:var(--muted);font-weight:400">(${rate === "—" ? "not played" : rate + " pts/min"})</span></span><span><strong>${result.perGame[id]}</strong></span>`;
     breakdownListEl.appendChild(row);
   });
 
   document.getElementById("yourMultipliers").textContent =
-    `Your hidden multipliers this round: Dino Jump ×${multipliers.dino}, Space Shooter ×${multipliers.shooter}, Pinball ×${multipliers.pinball}.`;
+    `Your hidden multipliers this round: Dino Jump ×${result.multipliers.dino}, Space Shooter ×${result.multipliers.shooter}, Pong ×${result.multipliers.pong}.`;
+
+  const rates = Object.keys(GAMES)
+    .filter((id) => result.gameSeconds[id] > 0)
+    .map((id) => result.perGame[id] / result.gameSeconds[id]);
+  const bestRate = rates.length ? Math.max(...rates) : 0;
+  const hypothetical = Math.round(bestRate * SESSION_SECONDS);
+  const gap = hypothetical - result.totalScore;
+  document.getElementById("regretExplain").textContent =
+    gap <= 3
+      ? `You barely left anything on the table — your final score of ${result.totalScore} is close to the ${hypothetical} you'd have gotten by spending the whole session on your best-scoring game. You found it fast!`
+      : `If you'd spent the full 10 minutes purely on your best-scoring game, you'd have scored around ${hypothetical}. Your actual score was ${result.totalScore} — that ${gap}-point gap is your regret, and it's the real cost of the time you spent exploring.`;
 
   document.getElementById("roundDoneNote").style.display = lock.isUnlocked() ? "none" : "block";
   lock.reveal();
+
+  startScreen.style.display = "none";
+  playScreen.style.display = "none";
+  endScreen.style.display = "block";
+}
+
+function endSession() {
+  clearInterval(timerId);
+  timerId = null;
+  stopCurrent();
+
+  const result = { playerName, totalScore, perGame, gameSeconds, multipliers };
+  localStorage.setItem(RESULT_KEY, JSON.stringify(result));
+  renderEndScreen(result);
 }
 
 startBtn.addEventListener("click", startSession);
@@ -280,9 +294,22 @@ endEarlyBtn.addEventListener("click", () => {
   if (confirm("End your session now? Your final score will be locked in.")) endSession();
 });
 playAgainBtn.addEventListener("click", () => {
+  localStorage.removeItem(RESULT_KEY);
   endScreen.style.display = "none";
   startScreen.style.display = "block";
 });
+
+// If a finished session exists (e.g. the page got reloaded), show that result
+// screen instead of dumping the student back to a blank start screen.
+(function restoreResultIfAny() {
+  const saved = localStorage.getItem(RESULT_KEY);
+  if (!saved) return;
+  try {
+    renderEndScreen(JSON.parse(saved));
+  } catch (e) {
+    localStorage.removeItem(RESULT_KEY);
+  }
+})();
 </script>
 </body>
 </html>
