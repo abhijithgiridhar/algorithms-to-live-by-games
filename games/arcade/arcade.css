@@ -74,6 +74,43 @@
   display: block;
 }
 
+.lives-row {
+  font-size: 1.3rem;
+  letter-spacing: 0.15rem;
+  margin-bottom: 0.5rem;
+}
+
+.canvas-frame {
+  position: relative;
+  max-width: 100%;
+}
+
+.game-over-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(16, 20, 28, 0.88);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0.6rem;
+  padding: 1rem;
+}
+
+.game-over-overlay h3 {
+  color: #fff;
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.game-over-overlay p {
+  color: #d9c9b8;
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+}
+
 .arcade-help {
   text-align: center;
   color: var(--muted);

@@ -1,39 +1,74 @@
 window.ArcadePong = (function () {
   let ctx, canvas, raf, running = false;
-  let player, ai, ball, onScore;
+  let player, ai, ball, onScore, onLives, lives;
   let keys = {};
   let pointerY = null;
   let serveTimer = 0;
+  let rallyPoints = 0;
+  let speedMult = 1;
+  let hitFlash = 0;
 
   const W = 800, H = 500;
-  const PADDLE_W = 14, PADDLE_H = 90;
+  const PADDLE_W = 14, PADDLE_H = 90, MIN_PADDLE_H = 42;
   const BASE_SPEED = 5.5;
+  const MAX_SPEED_MULT = 2.6;
+
+  function playerPaddleH() {
+    return Math.max(MIN_PADDLE_H, PADDLE_H - (speedMult - 1) * 34);
+  }
 
   function serveBall(towards) {
     const angle = (Math.random() * 0.6 - 0.3);
+    const s = BASE_SPEED * speedMult;
     ball = {
       x: W / 2,
       y: H / 2,
-      vx: BASE_SPEED * towards,
-      vy: BASE_SPEED * Math.sin(angle) * 2,
+      vx: s * towards,
+      vy: s * Math.sin(angle) * 2,
     };
   }
 
-  function reset() {
+  function reset(startingLives) {
     player = { y: H / 2 - PADDLE_H / 2 };
     ai = { y: H / 2 - PADDLE_H / 2 };
     serveTimer = 0;
+    rallyPoints = 0;
+    speedMult = 1;
+    hitFlash = 0;
+    lives = startingLives;
+    onLives(lives);
     serveBall(Math.random() < 0.5 ? 1 : -1);
   }
 
+  function bumpDifficulty() {
+    rallyPoints += 1;
+    if (rallyPoints % 3 === 0) {
+      speedMult = Math.min(MAX_SPEED_MULT, speedMult + 0.18);
+    }
+  }
+
+  function loseLife() {
+    lives -= 1;
+    hitFlash = 40;
+    onLives(lives);
+    if (lives <= 0) {
+      running = false;
+      cancelAnimationFrame(raf);
+    }
+  }
+
   function update() {
+    if (hitFlash > 0) hitFlash -= 1;
+    const playerH = playerPaddleH();
+
     if (keys.ArrowUp) player.y -= 7;
     if (keys.ArrowDown) player.y += 7;
-    if (pointerY !== null) player.y += (pointerY - (player.y + PADDLE_H / 2)) * 0.25;
-    player.y = Math.max(0, Math.min(H - PADDLE_H, player.y));
+    if (pointerY !== null) player.y += (pointerY - (player.y + playerH / 2)) * 0.25;
+    player.y = Math.max(0, Math.min(H - playerH, player.y));
 
     const aiTarget = ball.y - PADDLE_H / 2;
-    ai.y += (aiTarget - ai.y) * 0.07;
+    const aiSpeed = 0.06 + Math.min(0.05, speedMult * 0.015);
+    ai.y += (aiTarget - ai.y) * aiSpeed;
     ai.y = Math.max(0, Math.min(H - PADDLE_H, ai.y));
 
     if (serveTimer > 0) {
@@ -48,35 +83,43 @@ window.ArcadePong = (function () {
     if (ball.y > H - 8) { ball.y = H - 8; ball.vy *= -1; }
 
     // player paddle (left, x=30..30+PADDLE_W)
-    if (ball.vx < 0 && ball.x - 8 < 30 + PADDLE_W && ball.x > 20 && ball.y > player.y && ball.y < player.y + PADDLE_H) {
+    if (ball.vx < 0 && ball.x - 8 < 30 + PADDLE_W && ball.x > 20 && ball.y > player.y && ball.y < player.y + playerH) {
       ball.x = 30 + PADDLE_W + 8;
-      const hitPos = (ball.y - (player.y + PADDLE_H / 2)) / (PADDLE_H / 2);
-      ball.vx = Math.abs(ball.vx) * 1.05;
-      ball.vy = hitPos * 6;
+      const hitPos = (ball.y - (player.y + playerH / 2)) / (playerH / 2);
+      const s = BASE_SPEED * speedMult;
+      ball.vx = Math.abs(s);
+      ball.vy = hitPos * 6 * speedMult;
       onScore(1);
+      bumpDifficulty();
     }
 
     // ai paddle (right, x=W-30-PADDLE_W..W-30)
     if (ball.vx > 0 && ball.x + 8 > W - 30 - PADDLE_W && ball.x < W - 20 && ball.y > ai.y && ball.y < ai.y + PADDLE_H) {
       ball.x = W - 30 - PADDLE_W - 8;
       const hitPos = (ball.y - (ai.y + PADDLE_H / 2)) / (PADDLE_H / 2);
-      ball.vx = -Math.abs(ball.vx) * 1.05;
-      ball.vy = hitPos * 6;
+      const s = BASE_SPEED * speedMult;
+      ball.vx = -Math.abs(s);
+      ball.vy = hitPos * 6 * speedMult;
     }
 
     if (ball.x < -20) {
       // player scored past the AI
       onScore(2);
+      bumpDifficulty();
       serveTimer = 30;
       serveBall(-1);
     } else if (ball.x > W + 20) {
-      // player missed -- no penalty, just relaunch
-      serveTimer = 30;
-      serveBall(1);
+      // player missed -- real cost now, not a free difficulty reset
+      loseLife();
+      if (running) {
+        serveTimer = 30;
+        serveBall(1);
+      }
     }
   }
 
   function draw() {
+    const playerH = playerPaddleH();
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = "#10141c";
     ctx.fillRect(0, 0, W, H);
@@ -89,8 +132,8 @@ window.ArcadePong = (function () {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.fillStyle = "#e3a93b";
-    ctx.fillRect(30, player.y, PADDLE_W, PADDLE_H);
+    ctx.fillStyle = hitFlash > 0 && hitFlash % 8 < 4 ? "#ffffff" : "#e3a93b";
+    ctx.fillRect(30, player.y, PADDLE_W, playerH);
     ctx.fillStyle = "#e35b5b";
     ctx.fillRect(W - 30 - PADDLE_W, ai.y, PADDLE_W, PADDLE_H);
 
@@ -104,7 +147,7 @@ window.ArcadePong = (function () {
     if (!running) return;
     update();
     draw();
-    raf = requestAnimationFrame(loop);
+    if (running) raf = requestAnimationFrame(loop);
   }
 
   function keydown(e) {
@@ -121,15 +164,16 @@ window.ArcadePong = (function () {
   function pointerLeave() { pointerY = null; }
 
   return {
-    start(canvasEl, scoreCallback) {
+    start(canvasEl, scoreCallback, livesCallback, initialLives) {
       canvas = canvasEl;
       canvas.width = W;
       canvas.height = H;
       ctx = canvas.getContext("2d");
       onScore = scoreCallback;
+      onLives = livesCallback;
       keys = {};
       pointerY = null;
-      reset();
+      reset(initialLives);
       running = true;
       window.addEventListener("keydown", keydown);
       window.addEventListener("keyup", keyup);

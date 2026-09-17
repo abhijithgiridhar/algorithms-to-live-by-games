@@ -1,15 +1,17 @@
 window.ArcadeDino = (function () {
   let ctx, canvas, raf, running = false;
-  let dino, obstacles, groundY, speed, spawnTimer, onScore;
+  let dino, obstacles, groundY, speed, spawnTimer, onScore, onLives, lives;
 
   const W = 800, H = 300;
 
-  function reset() {
+  function reset(startingLives) {
     groundY = H - 40;
     dino = { x: 60, y: groundY - 40, w: 32, h: 40, vy: 0, jumping: false, hitFlash: 0 };
     obstacles = [];
-    speed = 5;
+    speed = 5.5;
     spawnTimer = 0;
+    lives = startingLives;
+    onLives(lives);
   }
 
   function jump() {
@@ -20,16 +22,28 @@ window.ArcadeDino = (function () {
   }
 
   function spawnObstacle() {
-    const h = 24 + Math.random() * 24;
+    const h = 24 + Math.random() * 28;
+    const twoPack = Math.random() < 0.2;
     obstacles.push({ x: W + 10, y: groundY - h, w: 18, h, scored: false });
+    if (twoPack) obstacles.push({ x: W + 50, y: groundY - h, w: 18, h, scored: false });
+  }
+
+  function loseLife() {
+    lives -= 1;
+    dino.hitFlash = 50;
+    onLives(lives);
+    if (lives <= 0) {
+      running = false;
+      cancelAnimationFrame(raf);
+    }
   }
 
   function update() {
-    speed += 0.0015;
+    speed += 0.0025;
     spawnTimer -= 1;
     if (spawnTimer <= 0) {
       spawnObstacle();
-      spawnTimer = 55 + Math.random() * 55 - speed * 3;
+      spawnTimer = Math.max(28, 60 - speed * 3.5);
     }
 
     dino.vy += 0.6;
@@ -47,8 +61,9 @@ window.ArcadeDino = (function () {
 
       const overlap = dino.x < o.x + o.w && dino.x + dino.w > o.x && dino.y < o.y + o.h && dino.y + dino.h > o.y;
       if (overlap && dino.hitFlash === 0) {
-        dino.hitFlash = 40;
-        onScore(-2);
+        loseLife();
+        obstacles.splice(i, 1);
+        continue;
       }
       if (!o.scored && o.x + o.w < dino.x) {
         o.scored = true;
@@ -80,7 +95,7 @@ window.ArcadeDino = (function () {
     if (!running) return;
     update();
     draw();
-    raf = requestAnimationFrame(loop);
+    if (running) raf = requestAnimationFrame(loop);
   }
 
   function keydown(e) {
@@ -91,13 +106,14 @@ window.ArcadeDino = (function () {
   }
 
   return {
-    start(canvasEl, scoreCallback) {
+    start(canvasEl, scoreCallback, livesCallback, initialLives) {
       canvas = canvasEl;
       canvas.width = W;
       canvas.height = H;
       ctx = canvas.getContext("2d");
       onScore = scoreCallback;
-      reset();
+      onLives = livesCallback;
+      reset(initialLives);
       running = true;
       window.addEventListener("keydown", keydown);
       canvas.addEventListener("pointerdown", jump);

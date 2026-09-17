@@ -113,17 +113,20 @@
 <script src="pong.js"></script>
 <script>
 const GAMES = {
-  dino: { label: "🦖 Dino Jump", help: "Press Space, tap, or click to jump over the cacti.", w: 800, h: 300 },
-  shooter: { label: "🚀 Space Shooter", help: "Move with the arrow keys, or drag your finger/mouse. Your ship fires on its own.", w: 800, h: 500 },
-  pong: { label: "🏓 Pong", help: "Move with the arrow keys, or drag your finger/mouse. Return the ball to score.", w: 800, h: 500 },
+  dino: { label: "🦖 Dino Jump", help: "Press Space, tap, or click to jump over the cacti. 3 lives — a hit costs one.", module: () => window.ArcadeDino },
+  shooter: { label: "🚀 Space Shooter", help: "Move with the arrow keys, or drag your finger/mouse. Your ship fires on its own — dodge the red divers or shoot them, they cost a life on contact. 3 lives.", module: () => window.ArcadeShooter },
+  pong: { label: "🏓 Pong", help: "Move with the arrow keys, or drag your finger/mouse. The ball speeds up (and your paddle shrinks) the longer you rally. Missing costs a life. 3 lives.", module: () => window.ArcadePong },
 };
 const SESSION_SECONDS = 10 * 60;
 const RESULT_KEY = "atlb_arcade_result";
+const MAX_LIVES = 3;
 
 let playerName = "";
 let totalScore = 0;
 let perGame = { dino: 0, shooter: 0, pong: 0 };
 let gameSeconds = { dino: 0, shooter: 0, pong: 0 };
+let lives = { dino: MAX_LIVES, shooter: MAX_LIVES, pong: MAX_LIVES };
+let runScore = { dino: 0, shooter: 0, pong: 0 };
 let multipliers = {};
 let activeGame = null;
 let currentModule = null;
@@ -176,6 +179,7 @@ function awardPoints(gameId, basePoints) {
   const pts = Math.round(basePoints * multipliers[gameId]);
   totalScore = Math.max(0, totalScore + pts);
   perGame[gameId] = Math.max(0, perGame[gameId] + pts);
+  runScore[gameId] = Math.max(0, runScore[gameId] + pts);
   totalScoreDisplay.textContent = totalScore;
 }
 
@@ -183,6 +187,24 @@ function stopCurrent() {
   if (currentModule) currentModule.stop();
   currentModule = null;
   stageWrap.innerHTML = "";
+}
+
+function renderLivesRow(el, gameId) {
+  const n = Math.max(0, lives[gameId]);
+  el.textContent = "❤️".repeat(n) + "🖤".repeat(MAX_LIVES - n);
+}
+
+function showGameOver(gameId) {
+  const overlay = stageWrap.querySelector(".game-over-overlay");
+  if (!overlay) return;
+  overlay.querySelector(".run-score").textContent = runScore[gameId];
+  overlay.style.display = "flex";
+}
+
+function restartGame(gameId) {
+  lives[gameId] = MAX_LIVES;
+  runScore[gameId] = 0;
+  if (gameId === activeGame) switchTab(gameId);
 }
 
 function switchTab(gameId) {
@@ -193,19 +215,45 @@ function switchTab(gameId) {
   });
   helpText.textContent = GAMES[gameId].help;
 
+  const livesRow = document.createElement("div");
+  livesRow.className = "lives-row";
+  renderLivesRow(livesRow, gameId);
+  stageWrap.appendChild(livesRow);
+
+  const frame = document.createElement("div");
+  frame.className = "canvas-frame";
   const canvas = document.createElement("canvas");
-  stageWrap.appendChild(canvas);
+  frame.appendChild(canvas);
+
+  const overlay = document.createElement("div");
+  overlay.className = "game-over-overlay";
+  overlay.style.display = "none";
+  overlay.innerHTML = `
+    <h3>💀 Out of lives</h3>
+    <p>You scored <strong class="run-score">0</strong> points on this attempt.</p>
+    <button class="btn" type="button">▶ Try again</button>
+    <p style="font-size:0.8rem;margin-top:0.2rem">...or switch to another game above.</p>
+  `;
+  overlay.querySelector("button").addEventListener("click", () => restartGame(gameId));
+  frame.appendChild(overlay);
+  stageWrap.appendChild(frame);
+
+  runScore[gameId] = 0;
 
   const scoreCb = (pts) => awardPoints(gameId, pts);
+  const livesCb = (n) => {
+    lives[gameId] = n;
+    renderLivesRow(livesRow, gameId);
+    if (n <= 0) showGameOver(gameId);
+  };
 
-  if (gameId === "dino") {
-    currentModule = window.ArcadeDino;
-  } else if (gameId === "shooter") {
-    currentModule = window.ArcadeShooter;
-  } else {
-    currentModule = window.ArcadePong;
+  if (lives[gameId] <= 0) {
+    showGameOver(gameId);
+    return;
   }
-  currentModule.start(canvas, scoreCb);
+
+  currentModule = GAMES[gameId].module();
+  currentModule.start(canvas, scoreCb, livesCb, lives[gameId]);
 }
 
 document.querySelectorAll(".arcade-tab").forEach((btn) => {
@@ -214,7 +262,7 @@ document.querySelectorAll(".arcade-tab").forEach((btn) => {
 
 function tick() {
   timeLeft -= 1;
-  gameSeconds[activeGame] += 1;
+  if (lives[activeGame] > 0) gameSeconds[activeGame] += 1;
   timerDisplay.textContent = formatTime(Math.max(0, timeLeft));
   timerStat.classList.toggle("low", timeLeft <= 60);
   if (timeLeft <= 0) endSession();
@@ -226,6 +274,8 @@ function startSession() {
   totalScore = 0;
   perGame = { dino: 0, shooter: 0, pong: 0 };
   gameSeconds = { dino: 0, shooter: 0, pong: 0 };
+  lives = { dino: MAX_LIVES, shooter: MAX_LIVES, pong: MAX_LIVES };
+  runScore = { dino: 0, shooter: 0, pong: 0 };
   const levels = shuffle([0.6, 1.0, 1.8]);
   multipliers = { dino: levels[0], shooter: levels[1], pong: levels[2] };
   timeLeft = SESSION_SECONDS;

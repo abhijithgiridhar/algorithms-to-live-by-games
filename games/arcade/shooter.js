@@ -1,24 +1,49 @@
 window.ArcadeShooter = (function () {
   let ctx, canvas, raf, running = false;
-  let ship, bullets, enemies, fireTimer, spawnTimer, onScore;
+  let ship, bullets, enemies, divers, fireTimer, spawnTimer, diverTimer, elapsed;
+  let onScore, onLives, lives;
   let keys = {};
   let pointerX = null;
+  let hitFlash = 0;
 
   const W = 800, H = 500;
 
-  function reset() {
+  function reset(startingLives) {
     ship = { x: W / 2, w: 40, h: 24 };
     bullets = [];
     enemies = [];
+    divers = [];
     fireTimer = 0;
     spawnTimer = 0;
+    diverTimer = 90;
+    elapsed = 0;
+    hitFlash = 0;
+    lives = startingLives;
+    onLives(lives);
   }
 
   function spawnEnemy() {
     enemies.push({ x: 30 + Math.random() * (W - 60), y: -20, w: 28, h: 22, vy: 1.2 + Math.random() * 1.3 });
   }
 
+  function spawnDiver() {
+    divers.push({ x: Math.random() * W, y: -20, w: 24, h: 24, vy: 2.4 + Math.min(2.5, elapsed / 900) });
+  }
+
+  function loseLife() {
+    lives -= 1;
+    hitFlash = 50;
+    onLives(lives);
+    if (lives <= 0) {
+      running = false;
+      cancelAnimationFrame(raf);
+    }
+  }
+
   function update() {
+    elapsed += 1;
+    if (hitFlash > 0) hitFlash -= 1;
+
     if (keys.ArrowLeft) ship.x -= 6;
     if (keys.ArrowRight) ship.x += 6;
     if (pointerX !== null) ship.x += (pointerX - ship.x) * 0.2;
@@ -33,7 +58,13 @@ window.ArcadeShooter = (function () {
     spawnTimer -= 1;
     if (spawnTimer <= 0) {
       spawnEnemy();
-      spawnTimer = 45 - Math.min(25, Math.random() * 20);
+      spawnTimer = Math.max(18, 45 - elapsed / 200);
+    }
+
+    diverTimer -= 1;
+    if (diverTimer <= 0) {
+      spawnDiver();
+      diverTimer = Math.max(55, 110 - elapsed / 150);
     }
 
     for (let i = bullets.length - 1; i >= 0; i--) {
@@ -58,6 +89,33 @@ window.ArcadeShooter = (function () {
         }
       }
     }
+
+    const shipTop = H - 70, shipBottom = H - 46, shipLeft = ship.x - ship.w / 2, shipRight = ship.x + ship.w / 2;
+    for (let i = divers.length - 1; i >= 0; i--) {
+      const d = divers[i];
+      d.y += d.vy;
+      d.x += (ship.x - d.x) * 0.01;
+
+      let hit = false;
+      for (let j = bullets.length - 1; j >= 0; j--) {
+        const b = bullets[j];
+        if (b.x > d.x - d.w / 2 && b.x < d.x + d.w / 2 && b.y > d.y - d.h / 2 && b.y < d.y + d.h / 2) {
+          bullets.splice(j, 1);
+          onScore(2);
+          hit = true;
+          break;
+        }
+      }
+      if (hit) { divers.splice(i, 1); continue; }
+
+      const overlap = d.x + d.w / 2 > shipLeft && d.x - d.w / 2 < shipRight && d.y + d.h / 2 > shipTop && d.y - d.h / 2 < shipBottom;
+      if (overlap && hitFlash === 0) {
+        divers.splice(i, 1);
+        loseLife();
+        continue;
+      }
+      if (d.y > H + 20) divers.splice(i, 1);
+    }
   }
 
   function draw() {
@@ -65,7 +123,7 @@ window.ArcadeShooter = (function () {
     ctx.fillStyle = "#10141c";
     ctx.fillRect(0, 0, W, H);
 
-    ctx.fillStyle = "#e3a93b";
+    ctx.fillStyle = hitFlash > 0 && hitFlash % 8 < 4 ? "#ffffff" : "#e3a93b";
     ctx.beginPath();
     ctx.moveTo(ship.x, H - 70);
     ctx.lineTo(ship.x - ship.w / 2, H - 46);
@@ -76,15 +134,22 @@ window.ArcadeShooter = (function () {
     ctx.fillStyle = "#f3dfae";
     bullets.forEach((b) => ctx.fillRect(b.x - 2, b.y - 8, 4, 10));
 
-    ctx.fillStyle = "#e35b5b";
+    ctx.fillStyle = "#8fbf9d";
     enemies.forEach((e) => ctx.fillRect(e.x - e.w / 2, e.y - e.h / 2, e.w, e.h));
+
+    ctx.fillStyle = "#e35b5b";
+    divers.forEach((d) => {
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.w / 2, 0, Math.PI * 2);
+      ctx.fill();
+    });
   }
 
   function loop() {
     if (!running) return;
     update();
     draw();
-    raf = requestAnimationFrame(loop);
+    if (running) raf = requestAnimationFrame(loop);
   }
 
   function keydown(e) {
@@ -101,15 +166,16 @@ window.ArcadeShooter = (function () {
   function pointerLeave() { pointerX = null; }
 
   return {
-    start(canvasEl, scoreCallback) {
+    start(canvasEl, scoreCallback, livesCallback, initialLives) {
       canvas = canvasEl;
       canvas.width = W;
       canvas.height = H;
       ctx = canvas.getContext("2d");
       onScore = scoreCallback;
+      onLives = livesCallback;
       keys = {};
       pointerX = null;
-      reset();
+      reset(initialLives);
       running = true;
       window.addEventListener("keydown", keydown);
       window.addEventListener("keyup", keyup);
