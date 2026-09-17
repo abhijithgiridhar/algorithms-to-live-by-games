@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz Show Streak — Algorithms to Live By</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../../index.html">&larr; All games</a>
+
+  <header class="page-head">
+    <h1>🎙️ Quiz Show Streak</h1>
+    <p>You're on stage. Each correct answer adds ₹10,000 to your bank. One wrong answer, and you lose everything — back to ₹0.</p>
+    <p>Pick your confidence level, then decide after every win: keep playing, or walk away with what you've got.</p>
+  </header>
+
+  <div id="pickerScreen">
+    <p class="date-counter">How confident are you in this topic?</p>
+    <div class="choice-row" id="confidenceChoices">
+      <button class="choice-btn" data-p="0.9"><span class="choice-title">Expert</span><span class="choice-sub">90% per question</span></button>
+      <button class="choice-btn" data-p="0.8"><span class="choice-title">Solid</span><span class="choice-sub">80% per question</span></button>
+      <button class="choice-btn" data-p="0.5"><span class="choice-title">Guessing</span><span class="choice-sub">50% per question</span></button>
+    </div>
+  </div>
+
+  <div id="playScreen" style="display:none">
+    <div class="bank-row">
+      <div class="big-stat"><span class="num" id="bankAmount">₹0</span><span class="label">Banked</span></div>
+      <div class="big-stat"><span class="num" id="roundNum">0</span><span class="label">Correct answers</span></div>
+    </div>
+
+    <div class="streak-track" id="streakTrack"></div>
+
+    <div class="controls" id="decisionControls">
+      <button class="btn" id="playBtn">🎲 Answer the next question</button>
+      <button class="btn secondary" id="cashOutBtn">💰 Cash out now</button>
+    </div>
+
+    <div id="resultBanner"></div>
+
+    <div class="controls" id="playAgainControls" style="display:none">
+      <button class="btn secondary" id="playAgainBtn">Play again →</button>
+    </div>
+
+    <p class="date-counter" id="roundDoneNote" style="display:none">Want to see the explanation? Ask your teacher for the password.</p>
+
+    <div class="panel lock-panel" id="lockPanel" style="display:none">
+      <div class="lock-icon">🔒</div>
+      <h3>Ready to see how it's really done?</h3>
+      <p>Ask your teacher for the password once everyone's had a go.</p>
+      <div class="controls">
+        <input type="password" class="password-input" id="passwordInput" placeholder="Password">
+        <button class="btn" id="unlockBtn">Unlock</button>
+      </div>
+      <p class="lock-error" id="lockError" style="display:none">Not quite — try again.</p>
+    </div>
+
+    <div id="revealContent" style="display:none">
+      <div class="panel" id="explainer">
+        <h3>Variant 5: Cumulative reward, risk of ruin</h3>
+        <p>This one isn't about picking the best from a list — it's a run of risky rounds. Every success <strong>adds</strong> to your winnings, but every round also carries a chance of failure, and one failure <strong>loses everything</strong> you've built up.</p>
+        <p>Early on you have little to lose, so playing on makes sense. As your pile grows, each extra round risks more of it. The best moment to stop is when the expected gain from one more round no longer outweighs the risk of losing it all.</p>
+        <ol class="steps-list">
+          <li>Estimate your chance of success and your chance of failure each round.</li>
+          <li>Divide the chance of success by the chance of failure.</li>
+          <li>That's roughly how many successful rounds to aim for.</li>
+          <li>Once you reach that number, stop and keep your winnings.</li>
+        </ol>
+        <div class="panel" style="background:var(--bg)">
+          <table style="width:100%;border-collapse:collapse;font-size:0.9rem">
+            <tr><th style="text-align:left;padding:0.3rem 0">Chance of success</th><th style="text-align:left;padding:0.3rem 0">Stop after about</th></tr>
+            <tr><td style="padding:0.3rem 0">90%</td><td>9 rounds</td></tr>
+            <tr><td style="padding:0.3rem 0">80%</td><td>4 rounds</td></tr>
+            <tr><td style="padding:0.3rem 0">50%</td><td>1 round</td></tr>
+          </table>
+        </div>
+        <p id="thisRoundNote" style="font-style:italic"></p>
+        <hr class="divider">
+        <h3>Now in code</h3>
+        <div class="code-block">
+          <pre><code id="codeBlock"></code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-foot">Optimal Stopping Variant 5 · Risk of ruin — inspired by <em>Algorithms to Live By</em>.</footer>
+</div>
+
+<script src="../../assets/lock-shared.js"></script>
+<script>
+const REWARD_PER_WIN = 10000;
+
+let successProb = null;
+let bank = 0;
+let wins = 0;
+let history = []; // "win" | "lose" | "pending"
+let over = false;
+
+const pickerScreen = document.getElementById("pickerScreen");
+const playScreen = document.getElementById("playScreen");
+const bankEl = document.getElementById("bankAmount");
+const roundNumEl = document.getElementById("roundNum");
+const streakTrackEl = document.getElementById("streakTrack");
+const decisionControlsEl = document.getElementById("decisionControls");
+const playBtn = document.getElementById("playBtn");
+const cashOutBtn = document.getElementById("cashOutBtn");
+const resultBannerEl = document.getElementById("resultBanner");
+const playAgainControlsEl = document.getElementById("playAgainControls");
+const playAgainBtn = document.getElementById("playAgainBtn");
+
+const lock = initGameLock({
+  game: "quitting",
+  lockPanelEl: document.getElementById("lockPanel"),
+  passwordInputEl: document.getElementById("passwordInput"),
+  unlockBtnEl: document.getElementById("unlockBtn"),
+  lockErrorEl: document.getElementById("lockError"),
+  contentEl: document.getElementById("revealContent"),
+  noteEl: document.getElementById("roundDoneNote"),
+});
+
+document.querySelectorAll("#confidenceChoices .choice-btn").forEach((btn) => {
+  btn.addEventListener("click", () => startGame(parseFloat(btn.dataset.p)));
+});
+
+function startGame(p) {
+  successProb = p;
+  bank = 0;
+  wins = 0;
+  history = [];
+  over = false;
+
+  pickerScreen.style.display = "none";
+  playScreen.style.display = "block";
+  resultBannerEl.innerHTML = "";
+  playAgainControlsEl.style.display = "none";
+  document.getElementById("roundDoneNote").style.display = "none";
+  document.getElementById("lockPanel").style.display = "none";
+  document.getElementById("revealContent").style.display = "none";
+  decisionControlsEl.style.display = "flex";
+
+  render();
+}
+
+function render() {
+  bankEl.textContent = `₹${bank.toLocaleString("en-IN")}`;
+  roundNumEl.textContent = wins;
+  streakTrackEl.innerHTML = "";
+  history.forEach((h) => {
+    const node = document.createElement("span");
+    node.className = "streak-node " + h;
+    node.textContent = h === "win" ? "✓" : "✕";
+    streakTrackEl.appendChild(node);
+  });
+}
+
+function playRound() {
+  if (over) return;
+  const success = Math.random() < successProb;
+  if (success) {
+    wins += 1;
+    bank += REWARD_PER_WIN;
+    history.push("win");
+    render();
+  } else {
+    history.push("lose");
+    bank = 0;
+    render();
+    endGame(false);
+  }
+}
+
+function cashOut() {
+  if (over) return;
+  endGame(true);
+}
+
+function endGame(cashedOut) {
+  over = true;
+  decisionControlsEl.style.display = "none";
+
+  const optimalRounds = Math.round(successProb / (1 - successProb));
+  let message;
+  if (!cashedOut) {
+    message = `💥 Wrong answer — you lost it all after ${wins} correct answer${wins === 1 ? "" : "s"}. The math said to stop around ${optimalRounds}.`;
+  } else if (wins === 0) {
+    message = `😅 You cashed out before answering a single question. Nothing risked, nothing banked.`;
+  } else {
+    const diff = wins - optimalRounds;
+    if (diff === 0) message = `🏆 Perfect! You cashed out at exactly ${wins}, right where the math says to stop.`;
+    else if (diff > 0) message = `😬 You cashed out at ${wins} — the math says the safer stop was around ${optimalRounds}. Lived dangerously and got away with it!`;
+    else message = `👍 You cashed out at ${wins} with ₹${bank.toLocaleString("en-IN")} banked. The math says you could safely have pushed on to about ${optimalRounds}.`;
+  }
+  resultBannerEl.innerHTML = `<div class="result-banner ${cashedOut ? "correct" : "wrong"}">${message}<br><span style="font-weight:400;font-size:0.85rem">Final bank: ₹${bank.toLocaleString("en-IN")}</span></div>`;
+
+  playAgainControlsEl.style.display = "flex";
+  document.getElementById("thisRoundNote").textContent =
+    `This round: a ${Math.round(successProb * 100)}% chance of success per question means ${Math.round(successProb * 100)}/${Math.round((1 - successProb) * 100)} ≈ ${optimalRounds} is roughly the number of correct answers to aim for before cashing out.`;
+  document.getElementById("codeBlock").textContent =
+`def when_to_quit(success_chance, failure_chance):
+    return round(success_chance / failure_chance)
+
+# ${Math.round(successProb * 100)}% success, ${Math.round((1 - successProb) * 100)}% failure -> stop after about ${optimalRounds} wins`;
+
+  document.getElementById("roundDoneNote").style.display = lock.isUnlocked() ? "none" : "block";
+  lock.reveal();
+}
+
+function playAgain() {
+  playScreen.style.display = "none";
+  pickerScreen.style.display = "block";
+}
+
+playBtn.addEventListener("click", playRound);
+cashOutBtn.addEventListener("click", cashOut);
+playAgainBtn.addEventListener("click", playAgain);
+</script>
+</body>
+</html>

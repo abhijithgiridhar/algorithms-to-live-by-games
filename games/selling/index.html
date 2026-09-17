@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sell Your Cycle — Algorithms to Live By</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../../index.html">&larr; All games</a>
+
+  <header class="page-head">
+    <h1>🚲 Sell Your Cycle</h1>
+    <p>You're graduating and need to sell your cycle before you leave campus. Offers come in one at a time, ₹3,000–₹5,000.</p>
+    <p>Every week you wait for a better offer costs you <strong>₹150</strong> in hassle, storage, and missed rides. You get up to 8 offers — decide right away: sell, or wait for the next one.</p>
+  </header>
+
+  <p class="date-counter" id="roundCounter">Week 1 of 8</p>
+
+  <div class="candidate-card" id="offerCard">
+    <div class="name" id="offerName">—</div>
+    <div class="bio" id="offerBio">—</div>
+    <div class="score-label">Offer</div>
+    <div class="score" id="offerScore">—</div>
+  </div>
+
+  <div class="bank-row">
+    <div class="big-stat"><span class="num" id="waitCostSoFar">₹0</span><span class="label">Cost of waiting so far</span></div>
+  </div>
+
+  <div class="controls" id="decisionControls">
+    <button class="btn" id="sellBtn">🤝 Sell now!</button>
+    <button class="btn secondary" id="waitBtn">⏳ Wait for a better offer</button>
+  </div>
+  <p class="date-counter" id="lastChanceNote" style="display:none">This is the last offer — no one else is buying. Time to decide!</p>
+
+  <div id="resultBanner"></div>
+
+  <div class="controls" id="playAgainControls" style="display:none">
+    <button class="btn secondary" id="playAgainBtn">Try again with 8 new offers →</button>
+  </div>
+
+  <p class="date-counter" id="roundDoneNote" style="display:none">Want to see the explanation? Ask your teacher for the password.</p>
+
+  <div class="panel lock-panel" id="lockPanel" style="display:none">
+    <div class="lock-icon">🔒</div>
+    <h3>Ready to see how it's really done?</h3>
+    <p>Ask your teacher for the password once everyone's had a go.</p>
+    <div class="controls">
+      <input type="password" class="password-input" id="passwordInput" placeholder="Password">
+      <button class="btn" id="unlockBtn">Unlock</button>
+    </div>
+    <p class="lock-error" id="lockError" style="display:none">Not quite — try again.</p>
+  </div>
+
+  <div id="revealContent" style="display:none">
+    <div class="panel" id="explainer">
+      <h3>Variant 3: Waiting has a cost</h3>
+      <p>The classic problem treats searching as free — the only cost of holding out is running out of options. Here, every week you wait costs you something real, so the goal changes: you're not trying to land the single best offer, you're trying to <strong>maximize what you actually keep</strong> once the cost of waiting is subtracted.</p>
+      <p>The fix is a <strong>threshold</strong> — a "good enough" price, set once at the start. Take the first offer that clears it. Surprisingly, that price never drops: if the costs and the range of offers don't change, tomorrow looks exactly like today, so there's no reason to lower your standard as time passes.</p>
+      <ol class="steps-list">
+        <li>Estimate the range of offers you expect (lowest to highest).</li>
+        <li>Estimate what each extra week of waiting costs you.</li>
+        <li>Set a threshold: the more waiting costs, the lower it should be.</li>
+        <li>Accept the first offer at or above the threshold — every week, the same threshold.</li>
+      </ol>
+      <p style="font-size:0.85rem;color:var(--muted)"><strong>The formula</strong> (offers spread evenly across a range): threshold = highest offer − √(2 × cost per week × size of range).</p>
+      <p id="thisRoundNote" style="font-style:italic"></p>
+      <hr class="divider">
+      <h3>Now in code</h3>
+      <div class="code-block">
+        <pre><code id="codeBlock"></code></pre>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-foot">Optimal Stopping Variant 3 · Waiting has a cost — inspired by <em>Algorithms to Live By</em>.</footer>
+</div>
+
+<script src="../../assets/lock-shared.js"></script>
+<script>
+const ROUNDS = 8;
+const LOW = 3000, HIGH = 5000;
+const COST_PER_WEEK = 150;
+const THRESHOLD = HIGH - Math.sqrt(2 * COST_PER_WEEK * (HIGH - LOW));
+
+let offers = [];
+let idx = 0;
+let decided = false;
+
+const roundCounterEl = document.getElementById("roundCounter");
+const offerNameEl = document.getElementById("offerName");
+const offerBioEl = document.getElementById("offerBio");
+const offerScoreEl = document.getElementById("offerScore");
+const waitCostEl = document.getElementById("waitCostSoFar");
+const decisionControlsEl = document.getElementById("decisionControls");
+const lastChanceNoteEl = document.getElementById("lastChanceNote");
+const sellBtn = document.getElementById("sellBtn");
+const waitBtn = document.getElementById("waitBtn");
+const resultBannerEl = document.getElementById("resultBanner");
+const playAgainControlsEl = document.getElementById("playAgainControls");
+const playAgainBtn = document.getElementById("playAgainBtn");
+
+const lock = initGameLock({
+  game: "selling",
+  lockPanelEl: document.getElementById("lockPanel"),
+  passwordInputEl: document.getElementById("passwordInput"),
+  unlockBtnEl: document.getElementById("unlockBtn"),
+  lockErrorEl: document.getElementById("lockError"),
+  contentEl: document.getElementById("revealContent"),
+  noteEl: document.getElementById("roundDoneNote"),
+});
+
+function randOffer() {
+  return Math.round(LOW + Math.random() * (HIGH - LOW));
+}
+
+function startRound() {
+  offers = Array.from({ length: ROUNDS }, randOffer);
+  idx = 0;
+  decided = false;
+
+  resultBannerEl.innerHTML = "";
+  playAgainControlsEl.style.display = "none";
+  document.getElementById("roundDoneNote").style.display = "none";
+  document.getElementById("lockPanel").style.display = "none";
+  document.getElementById("revealContent").style.display = "none";
+  decisionControlsEl.style.display = "flex";
+
+  renderOffer();
+}
+
+function renderOffer() {
+  const offer = offers[idx];
+  const costSoFar = idx * COST_PER_WEEK;
+  roundCounterEl.textContent = `Week ${idx + 1} of ${ROUNDS}`;
+  offerNameEl.textContent = `Buyer #${idx + 1}`;
+  offerBioEl.textContent = "Wants your cycle. Offers once, then moves on if you don't decide now.";
+  offerScoreEl.textContent = `₹${offer.toLocaleString("en-IN")}`;
+  waitCostEl.textContent = `₹${costSoFar.toLocaleString("en-IN")}`;
+
+  const isLast = idx === ROUNDS - 1;
+  waitBtn.style.display = isLast ? "none" : "inline-block";
+  lastChanceNoteEl.style.display = isLast ? "block" : "none";
+}
+
+function sell() {
+  if (decided) return;
+  decided = true;
+  finishRound(idx);
+}
+
+function wait() {
+  if (decided || idx >= ROUNDS - 1) return;
+  idx += 1;
+  renderOffer();
+}
+
+function finishRound(soldIdx) {
+  decided = true;
+  decisionControlsEl.style.display = "none";
+  lastChanceNoteEl.style.display = "none";
+
+  const price = offers[soldIdx];
+  const costPaid = soldIdx * COST_PER_WEEK;
+  const net = price - costPaid;
+  const bestPossibleNet = Math.max(...offers.map((p, i) => p - i * COST_PER_WEEK));
+  const gotBest = net === bestPossibleNet;
+
+  let message;
+  if (gotBest) {
+    message = `🏆 That was the best possible net outcome: ₹${price.toLocaleString("en-IN")} minus ₹${costPaid.toLocaleString("en-IN")} in waiting costs = ₹${net.toLocaleString("en-IN")}.`;
+  } else {
+    message = `🚲 Sold for ₹${price.toLocaleString("en-IN")}, minus ₹${costPaid.toLocaleString("en-IN")} in waiting costs = ₹${net.toLocaleString("en-IN")} net. Best possible this round was ₹${bestPossibleNet.toLocaleString("en-IN")}.`;
+  }
+  resultBannerEl.innerHTML = `<div class="result-banner ${gotBest ? "correct" : "wrong"}">${message}</div>`;
+
+  playAgainControlsEl.style.display = "flex";
+  document.getElementById("thisRoundNote").textContent =
+    `This round: offers ranged ₹${LOW.toLocaleString("en-IN")}–₹${HIGH.toLocaleString("en-IN")}, waiting cost ₹${COST_PER_WEEK}/week, so the threshold is about ₹${Math.round(THRESHOLD).toLocaleString("en-IN")}. You sold in week ${soldIdx + 1} for ₹${price.toLocaleString("en-IN")}.`;
+  document.getElementById("codeBlock").textContent =
+`def sell(offers, threshold=${Math.round(THRESHOLD)}):
+    for offer in offers:
+        if offer >= threshold:
+            return offer   # sell now
+    return offers[-1]      # ran out -- take the last offer`;
+
+  document.getElementById("roundDoneNote").style.display = lock.isUnlocked() ? "none" : "block";
+  lock.reveal();
+}
+
+sellBtn.addEventListener("click", sell);
+waitBtn.addEventListener("click", wait);
+playAgainBtn.addEventListener("click", startRound);
+
+startRound();
+</script>
+</body>
+</html>

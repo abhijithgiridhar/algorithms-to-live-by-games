@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campus Parking Rush — Algorithms to Live By</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../../index.html">&larr; All games</a>
+
+  <header class="page-head">
+    <h1>🚗 Campus Parking Rush</h1>
+    <p>You're late for a lecture. Spots line the one-way street up to the lecture hall — you can only drive forward, never back up.</p>
+    <p>Pick how busy campus is today, then drive spot by spot toward the hall.</p>
+  </header>
+
+  <div id="pickerScreen">
+    <p class="date-counter">How busy is it today?</p>
+    <div class="choice-row" id="occupancyChoices">
+      <button class="choice-btn" data-rate="0.8"><span class="choice-title">Quiet</span><span class="choice-sub">80% full</span></button>
+      <button class="choice-btn" data-rate="0.9"><span class="choice-title">Busy</span><span class="choice-sub">90% full</span></button>
+      <button class="choice-btn" data-rate="0.95"><span class="choice-title">Exam Day</span><span class="choice-sub">95% full</span></button>
+    </div>
+  </div>
+
+  <div id="playScreen" style="display:none">
+    <p class="date-counter" id="spotCounter">Spot 1 of 24</p>
+
+    <div class="candidate-card" id="spotCard">
+      <div class="name" id="spotName">—</div>
+      <div class="bio" id="spotBio">—</div>
+    </div>
+
+    <div class="spot-strip" id="spotStrip"></div>
+
+    <div class="controls" id="decisionControls">
+      <button class="btn" id="parkBtn">🅿️ Park here!</button>
+      <button class="btn secondary" id="driveBtn">🚗 Drive on</button>
+    </div>
+
+    <div id="resultBanner"></div>
+
+    <div class="controls" id="playAgainControls" style="display:none">
+      <button class="btn secondary" id="playAgainBtn">Try again →</button>
+    </div>
+
+    <p class="date-counter" id="roundDoneNote" style="display:none">Want to see the explanation? Ask your teacher for the password.</p>
+
+    <div class="panel lock-panel" id="lockPanel" style="display:none">
+      <div class="lock-icon">🔒</div>
+      <h3>Ready to see how it's really done?</h3>
+      <p>Ask your teacher for the password once everyone's had a go.</p>
+      <div class="controls">
+        <input type="password" class="password-input" id="passwordInput" placeholder="Password">
+        <button class="btn" id="unlockBtn">Unlock</button>
+      </div>
+      <p class="lock-error" id="lockError" style="display:none">Not quite — try again.</p>
+    </div>
+
+    <div id="revealContent" style="display:none">
+      <div class="panel" id="explainer">
+        <h3>Variant 4: Availability depends on others</h3>
+        <p>This is the classic problem with one big change: the spots aren't just yours to accept or reject. Every other driver on the road wants one too, so how many are actually free depends on <strong>the crowd</strong>, not chance alone.</p>
+        <p>The key number is the <strong>occupancy rate</strong> — the share of spots already taken. The busier it is, the sooner you should grab a spot, well before you feel like you "should" have to.</p>
+        <ol class="steps-list">
+          <li>Estimate the occupancy rate.</li>
+          <li>Look up the distance from the destination where you should start taking any free spot.</li>
+          <li>Drive past free spots until you're within that distance.</li>
+          <li>Then take the very first free spot you see.</li>
+        </ol>
+        <div class="panel" style="background:var(--bg)">
+          <table style="width:100%;border-collapse:collapse;font-size:0.9rem">
+            <tr><th style="text-align:left;padding:0.3rem 0">Spots taken</th><th style="text-align:left;padding:0.3rem 0">Start taking spots within</th></tr>
+            <tr><td style="padding:0.3rem 0">80%</td><td>3 spots</td></tr>
+            <tr><td style="padding:0.3rem 0">90%</td><td>7 spots</td></tr>
+            <tr><td style="padding:0.3rem 0">95%</td><td>14 spots</td></tr>
+          </table>
+        </div>
+        <p style="font-size:0.85rem;color:var(--muted)"><strong>The formula:</strong> distance ≈ 0.69 ÷ (share of spots that are free). At 90% full, that's 0.69 ÷ 0.10 ≈ 7.</p>
+        <p id="thisRoundNote" style="font-style:italic"></p>
+        <hr class="divider">
+        <h3>Now in code</h3>
+        <div class="code-block">
+          <pre><code id="codeBlock">def park(spots_from_destination, start_taking_within):
+    for distance in reversed(spots_from_destination):
+        is_free = check_spot(distance)
+        if distance <= start_taking_within and is_free:
+            return distance   # park here
+    return "overflow lot"     # never found one in range</code></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-foot">Optimal Stopping Variant 4 · Competing for options — inspired by <em>Algorithms to Live By</em>.</footer>
+</div>
+
+<script src="../../assets/lock-shared.js"></script>
+<script>
+const STREET_LEN = 24;
+const OVERFLOW_PENALTY = 30;
+const THRESHOLDS = { 0.8: 3, 0.9: 7, 0.95: 14 };
+
+let occupancy = null;
+let spots = [];      // index 0 = farthest from destination, STREET_LEN-1 = closest (spot #1)
+let idx = 0;          // pointer into spots[]
+let parkedAt = null;  // distance from destination if parked
+let decided = false;
+
+const pickerScreen = document.getElementById("pickerScreen");
+const playScreen = document.getElementById("playScreen");
+const spotCounter = document.getElementById("spotCounter");
+const spotNameEl = document.getElementById("spotName");
+const spotBioEl = document.getElementById("spotBio");
+const spotStripEl = document.getElementById("spotStrip");
+const decisionControlsEl = document.getElementById("decisionControls");
+const parkBtn = document.getElementById("parkBtn");
+const driveBtn = document.getElementById("driveBtn");
+const resultBannerEl = document.getElementById("resultBanner");
+const playAgainControlsEl = document.getElementById("playAgainControls");
+const playAgainBtn = document.getElementById("playAgainBtn");
+
+const lock = initGameLock({
+  game: "parking",
+  lockPanelEl: document.getElementById("lockPanel"),
+  passwordInputEl: document.getElementById("passwordInput"),
+  unlockBtnEl: document.getElementById("unlockBtn"),
+  lockErrorEl: document.getElementById("lockError"),
+  contentEl: document.getElementById("revealContent"),
+  noteEl: document.getElementById("roundDoneNote"),
+});
+
+document.querySelectorAll("#occupancyChoices .choice-btn").forEach((btn) => {
+  btn.addEventListener("click", () => startRound(parseFloat(btn.dataset.rate)));
+});
+
+function distanceFromDestination(spotIndex) {
+  // spots[0] is farthest (distance STREET_LEN), spots[STREET_LEN-1] is closest (distance 1)
+  return STREET_LEN - spotIndex;
+}
+
+function startRound(rate) {
+  occupancy = rate;
+  spots = Array.from({ length: STREET_LEN }, () => Math.random() >= rate); // true = free
+  idx = 0;
+  parkedAt = null;
+  decided = false;
+
+  pickerScreen.style.display = "none";
+  playScreen.style.display = "block";
+  resultBannerEl.innerHTML = "";
+  playAgainControlsEl.style.display = "none";
+  document.getElementById("roundDoneNote").style.display = "none";
+  document.getElementById("lockPanel").style.display = "none";
+  document.getElementById("revealContent").style.display = "none";
+  decisionControlsEl.style.display = "flex";
+
+  renderSpot();
+}
+
+function renderSpot() {
+  const distance = distanceFromDestination(idx);
+  const free = spots[idx];
+  spotCounter.textContent = `${distance} spot${distance === 1 ? "" : "s"} from the lecture hall`;
+  spotNameEl.textContent = free ? "🟢 Free spot!" : "🔴 Taken";
+  spotBioEl.textContent = free ? "You could park here, or keep driving toward the hall." : "Someone's already parked here. Keep driving.";
+  parkBtn.disabled = !free;
+
+  spotStripEl.innerHTML = "";
+  spots.slice(0, idx + 1).forEach((isFree, i) => {
+    const chip = document.createElement("span");
+    chip.className = "spot-chip " + (isFree ? "free" : "taken") + (i === idx ? " current" : "");
+    chip.textContent = STREET_LEN - i;
+    spotStripEl.appendChild(chip);
+  });
+}
+
+function park() {
+  if (decided || !spots[idx]) return;
+  parkedAt = distanceFromDestination(idx);
+  decided = true;
+  finishRound();
+}
+
+function driveOn() {
+  if (decided) return;
+  if (idx >= STREET_LEN - 1) {
+    parkedAt = null; // never parked -> overflow
+    decided = true;
+    finishRound();
+    return;
+  }
+  idx += 1;
+  renderSpot();
+}
+
+function finishRound() {
+  decisionControlsEl.style.display = "none";
+
+  const bestFreeDistance = Math.min(
+    ...spots.map((f, i) => (f ? distanceFromDestination(i) : Infinity))
+  );
+  const walked = parkedAt === null ? OVERFLOW_PENALTY : parkedAt;
+
+  let message;
+  if (parkedAt === null) {
+    message = `😩 No spot taken in time — you're stuck in the overflow lot, ${OVERFLOW_PENALTY} spots away.`;
+  } else if (parkedAt === bestFreeDistance) {
+    message = `🏆 Perfect! ${parkedAt} spots away was the closest free spot on the whole street.`;
+  } else {
+    message = `🚗 You parked ${parkedAt} spots away. The closest free spot overall was ${bestFreeDistance} spots away.`;
+  }
+  resultBannerEl.innerHTML = `<div class="result-banner ${parkedAt === bestFreeDistance ? "correct" : "wrong"}">${message}</div>`;
+
+  playAgainControlsEl.style.display = "flex";
+  const threshold = THRESHOLDS[occupancy];
+  document.getElementById("thisRoundNote").textContent =
+    `This round: campus was ${Math.round(occupancy * 100)}% full, so the rule says start taking any free spot within ${threshold} spots of the hall. ` +
+    (parkedAt !== null ? `You parked at ${parkedAt}.` : `You never did.`);
+  document.getElementById("codeBlock").textContent =
+`def park(spots_from_destination, start_taking_within=${threshold}):
+    for distance in reversed(spots_from_destination):
+        is_free = check_spot(distance)
+        if distance <= start_taking_within and is_free:
+            return distance   # park here
+    return "overflow lot"     # never found one in range`;
+
+  document.getElementById("roundDoneNote").style.display = lock.isUnlocked() ? "none" : "block";
+  lock.reveal();
+}
+
+function playAgain() {
+  playScreen.style.display = "none";
+  pickerScreen.style.display = "block";
+}
+
+parkBtn.addEventListener("click", park);
+driveBtn.addEventListener("click", driveOn);
+playAgainBtn.addEventListener("click", playAgain);
+</script>
+</body>
+</html>

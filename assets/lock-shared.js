@@ -8,6 +8,9 @@ const GAME_LOCKS = {
   search: { storageKey: "atlb_unlocked_search_v1", password: "258" },
   rishta: { storageKey: "atlb_unlocked_rishta_v1", password: "176" },
   secretary: { storageKey: "atlb_unlocked_secretary_v1", password: "134" },
+  parking: { storageKey: "atlb_unlocked_parking_v1", password: "585" },
+  selling: { storageKey: "atlb_unlocked_selling_v1", password: "991" },
+  quitting: { storageKey: "atlb_unlocked_quitting_v1", password: "838" },
 };
 
 // opts: { game, lockPanelEl, passwordInputEl, unlockBtnEl, lockErrorEl, contentEl, noteEl }
