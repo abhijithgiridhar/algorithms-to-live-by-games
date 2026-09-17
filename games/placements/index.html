@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Placement Season — Algorithms to Live By</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../../index.html">&larr; All games</a>
+
+  <header class="page-head">
+    <h1>💼 Placement Season</h1>
+    <p>11 companies visit campus, one at a time. Each gives you an offer with a <strong>percentile score out of 100</strong> — you know exactly how it compares to every offer anyone's ever gotten.</p>
+    <p>Decide on the spot: accept the offer, or wait for the next company. No going back.</p>
+  </header>
+
+  <p class="date-counter" id="roundCounter">Company 1 of 11</p>
+
+  <div class="candidate-card" id="offerCard">
+    <div class="name" id="offerName">—</div>
+    <div class="bio" id="offerBio">—</div>
+    <div class="score-label">Offer percentile</div>
+    <div class="score" id="offerScore">—</div>
+  </div>
+
+  <div class="big-stat">
+    <span class="num" id="barValue">—</span>
+    <span class="label">Today's bar to clear</span>
+  </div>
+
+  <div class="controls" id="decisionControls">
+    <button class="btn" id="acceptBtn">✅ Accept this offer</button>
+    <button class="btn secondary" id="waitBtn">👋 Wait for the next company</button>
+  </div>
+  <p class="date-counter" id="lastChanceNote" style="display:none">This is the last company on campus — time to decide!</p>
+
+  <div id="resultBanner"></div>
+  <ul class="results-list" id="resultsList"></ul>
+
+  <div class="controls" id="playAgainControls" style="display:none">
+    <button class="btn secondary" id="playAgainBtn">Try again with 11 new companies →</button>
+  </div>
+
+  <p class="date-counter" id="roundDoneNote" style="display:none">Want to see the explanation? Ask your teacher for the password.</p>
+
+  <div class="panel lock-panel" id="lockPanel" style="display:none">
+    <div class="lock-icon">🔒</div>
+    <h3>Ready to see how it's really done?</h3>
+    <p>Ask your teacher for the password once everyone's had a go.</p>
+    <div class="controls">
+      <input type="password" class="password-input" id="passwordInput" placeholder="Password">
+      <button class="btn" id="unlockBtn">Unlock</button>
+    </div>
+    <p class="lock-error" id="lockError" style="display:none">Not quite — try again.</p>
+  </div>
+
+  <div id="revealContent" style="display:none">
+    <div class="panel" id="explainer">
+      <h3>Variant 2: Full information — the Threshold Rule</h3>
+      <p>In the classic problem you can only rank offers against each other, so you need a "look" phase to learn what "good" even means. Here, every offer has a real score on a known scale — you know how good it is the instant you see it.</p>
+      <p>That changes everything. There's <strong>no looking phase</strong>. Instead you judge from offer #1, using a <strong>bar</strong> — a minimum score worth accepting. The bar starts very high (many companies are still ahead, so a better one is likely) and drops as companies run out.</p>
+      <ol class="steps-list">
+        <li>Start judging from the very first offer.</li>
+        <li>Look up the bar for how many companies remain after this one.</li>
+        <li>If this offer clears the bar, accept it.</li>
+        <li>If you reach the last company, accept whatever they offer.</li>
+      </ol>
+      <div class="panel" style="background:var(--bg)">
+        <table style="width:100%;border-collapse:collapse;font-size:0.9rem">
+          <tr><th style="text-align:left;padding:0.3rem 0">Companies still ahead</th><th style="text-align:left;padding:0.3rem 0">Accept if score ≥</th></tr>
+          <tr><td style="padding:0.3rem 0">10</td><td>92</td></tr>
+          <tr><td style="padding:0.3rem 0">5</td><td>86</td></tr>
+          <tr><td style="padding:0.3rem 0">3</td><td>78</td></tr>
+          <tr><td style="padding:0.3rem 0">2</td><td>69</td></tr>
+          <tr><td style="padding:0.3rem 0">1</td><td>50</td></tr>
+          <tr><td style="padding:0.3rem 0">0 (last one)</td><td>anything</td></tr>
+        </table>
+      </div>
+      <p style="font-size:0.85rem;color:var(--muted)">Best win rate with this rule: <strong>58%</strong> — compared with 37% when you can only compare offers to each other.</p>
+      <p id="thisRoundNote" style="font-style:italic"></p>
+      <hr class="divider">
+      <h3>Now in code</h3>
+      <div class="code-block">
+        <pre><code id="codeBlock">def accept_offer(offers, bar_for):
+    for i, offer in enumerate(offers):
+        remaining = len(offers) - i - 1
+        if offer.score >= bar_for(remaining):
+            return offer   # accept!
+    return offers[-1]      # ran out -- take the last one</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-foot">Optimal Stopping Variant 2 · Full information — inspired by <em>Algorithms to Live By</em>.</footer>
+</div>
+
+<script src="../../assets/lock-shared.js"></script>
+<script>
+const N = 11;
+const COMPANIES = [
+  "Bluepeak Robotics", "Nimbus Cloud Labs", "Trailhead Analytics", "Cursive Fintech",
+  "Orbital Games Studio", "GreenGrid Energy", "Hyphen Design Co.", "Ledger & Loop",
+  "Northstar Biotech", "Quickstep Logistics", "Amberlight Media", "Fernway Retail Tech",
+];
+
+let offers = [];
+let idx = 0;
+let decided = false;
+
+function barFor(remaining) {
+  const anchors = [
+    [0, 0], [1, 50], [2, 69], [3, 78], [4, 82], [5, 86],
+    [6, 87], [7, 88], [8, 90], [9, 91], [10, 92],
+  ];
+  const found = anchors.find((a) => a[0] === remaining);
+  return found ? found[1] : 92;
+}
+
+const roundCounterEl = document.getElementById("roundCounter");
+const offerNameEl = document.getElementById("offerName");
+const offerBioEl = document.getElementById("offerBio");
+const offerScoreEl = document.getElementById("offerScore");
+const barValueEl = document.getElementById("barValue");
+const decisionControlsEl = document.getElementById("decisionControls");
+const lastChanceNoteEl = document.getElementById("lastChanceNote");
+const acceptBtn = document.getElementById("acceptBtn");
+const waitBtn = document.getElementById("waitBtn");
+const resultBannerEl = document.getElementById("resultBanner");
+const resultsListEl = document.getElementById("resultsList");
+const playAgainControlsEl = document.getElementById("playAgainControls");
+const playAgainBtn = document.getElementById("playAgainBtn");
+
+const lock = initGameLock({
+  game: "placements",
+  lockPanelEl: document.getElementById("lockPanel"),
+  passwordInputEl: document.getElementById("passwordInput"),
+  unlockBtnEl: document.getElementById("unlockBtn"),
+  lockErrorEl: document.getElementById("lockError"),
+  contentEl: document.getElementById("revealContent"),
+  noteEl: document.getElementById("roundDoneNote"),
+});
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function uniqueScores(n) {
+  const set = new Set();
+  while (set.size < n) set.add(Math.floor(Math.random() * 98) + 1);
+  return Array.from(set);
+}
+
+function startRound() {
+  const names = shuffle(COMPANIES).slice(0, N);
+  const scores = shuffle(uniqueScores(N));
+  offers = names.map((name, i) => ({ name, score: scores[i] }));
+  idx = 0;
+  decided = false;
+
+  resultBannerEl.innerHTML = "";
+  resultsListEl.innerHTML = "";
+  playAgainControlsEl.style.display = "none";
+  document.getElementById("roundDoneNote").style.display = "none";
+  document.getElementById("lockPanel").style.display = "none";
+  document.getElementById("revealContent").style.display = "none";
+  decisionControlsEl.style.display = "flex";
+
+  render();
+}
+
+function render() {
+  const remaining = N - idx - 1;
+  const offer = offers[idx];
+  roundCounterEl.textContent = `Company ${idx + 1} of ${N}`;
+  offerNameEl.textContent = offer.name;
+  offerBioEl.textContent = `${remaining} more compan${remaining === 1 ? "y" : "ies"} left to visit after this one.`;
+  offerScoreEl.textContent = offer.score;
+  barValueEl.textContent = remaining === 0 ? "anything" : barFor(remaining);
+
+  const isLast = idx === N - 1;
+  waitBtn.style.display = isLast ? "none" : "inline-block";
+  lastChanceNoteEl.style.display = isLast ? "block" : "none";
+}
+
+function accept() {
+  if (decided) return;
+  decided = true;
+  finishRound(idx);
+}
+
+function wait() {
+  if (decided || idx >= N - 1) return;
+  idx += 1;
+  render();
+}
+
+function finishRound(chosenIdx) {
+  decided = true;
+  decisionControlsEl.style.display = "none";
+  lastChanceNoteEl.style.display = "none";
+
+  const trueBestScore = Math.max(...offers.map((o) => o.score));
+  const chosenScore = offers[chosenIdx].score;
+  const foundBest = chosenScore === trueBestScore;
+  const sortedDesc = offers.map((o) => o.score).slice().sort((a, b) => b - a);
+  const rank = sortedDesc.indexOf(chosenScore) + 1;
+
+  let message;
+  if (foundBest) {
+    message = `🏆 ${offers[chosenIdx].name} really was the best offer of all ${N}.`;
+  } else if (rank <= 3) {
+    message = `😊 Not bad — ${offers[chosenIdx].name} was the #${rank} best offer out of ${N}.`;
+  } else {
+    message = `😅 ${offers[chosenIdx].name} was only the #${rank} best offer out of ${N}. Someone did much better.`;
+  }
+  resultBannerEl.innerHTML = `<div class="result-banner ${foundBest ? "correct" : "wrong"}">${message}</div>`;
+
+  resultsListEl.innerHTML = "";
+  offers.forEach((o, i) => {
+    const li = document.createElement("li");
+    li.className = "results-row" + (i === chosenIdx ? " chosen" : "");
+    const crown = o.score === trueBestScore ? " 👑" : "";
+    const mark = i === chosenIdx ? " ✅" : "";
+    li.innerHTML = `<span class="row-name">Company ${i + 1}: ${o.name}${crown}${mark}</span><span class="row-score">${o.score}</span>`;
+    resultsListEl.appendChild(li);
+  });
+
+  playAgainControlsEl.style.display = "flex";
+  document.getElementById("thisRoundNote").textContent =
+    `This round: you accepted company #${chosenIdx + 1}, whose score was ${chosenScore}. With ${N - chosenIdx - 1} companies left at that point, the bar to clear was ${chosenIdx === N - 1 ? "anything (last one)" : barFor(N - chosenIdx - 1)}.`;
+
+  document.getElementById("roundDoneNote").style.display = lock.isUnlocked() ? "none" : "block";
+  lock.reveal();
+}
+
+acceptBtn.addEventListener("click", accept);
+waitBtn.addEventListener("click", wait);
+playAgainBtn.addEventListener("click", startRound);
+
+startRound();
+</script>
+</body>
+</html>

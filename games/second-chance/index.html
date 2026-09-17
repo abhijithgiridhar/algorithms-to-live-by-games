@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Second Chance Internships — Algorithms to Live By</title>
+<link rel="stylesheet" href="../../assets/style.css">
+</head>
+<body>
+<div class="wrap">
+  <a class="back-link" href="../../index.html">&larr; All games</a>
+
+  <header class="page-head">
+    <h1>🔄 Second Chance Internships</h1>
+    <p>10 startups interview you, one at a time. Accept an offer, or pass and move on — you can't come back to one you passed... usually.</p>
+    <p>If you reach the end without accepting anyone, you can email your <strong>favorite</strong> one back. There's only a <strong>50% chance</strong> the role's still open.</p>
+  </header>
+
+  <p class="date-counter" id="roundCounter">Startup 1 of 10</p>
+
+  <div class="candidate-card" id="offerCard">
+    <div class="name" id="offerName">—</div>
+    <div class="bio" id="offerBio">—</div>
+    <div class="score-label">Offer quality</div>
+    <div class="score" id="offerScore">—</div>
+  </div>
+
+  <div class="history-strip" id="historyStrip"></div>
+
+  <div class="controls" id="decisionControls">
+    <button class="btn" id="acceptBtn">✅ Accept this offer</button>
+    <button class="btn secondary" id="passBtn">👋 Pass, see the next startup</button>
+  </div>
+  <p class="date-counter" id="lastChanceNote" style="display:none">This is the last startup — pass now and you'll have to email your favorite back.</p>
+
+  <div id="resultBanner"></div>
+  <ul class="results-list" id="resultsList"></ul>
+
+  <div class="controls" id="playAgainControls" style="display:none">
+    <button class="btn secondary" id="playAgainBtn">Try again with 10 new startups →</button>
+  </div>
+
+  <p class="date-counter" id="roundDoneNote" style="display:none">Want to see the explanation? Ask your teacher for the password.</p>
+
+  <div class="panel lock-panel" id="lockPanel" style="display:none">
+    <div class="lock-icon">🔒</div>
+    <h3>Ready to see how it's really done?</h3>
+    <p>Ask your teacher for the password once everyone's had a go.</p>
+    <div class="controls">
+      <input type="password" class="password-input" id="passwordInput" placeholder="Password">
+      <button class="btn" id="unlockBtn">Unlock</button>
+    </div>
+    <p class="lock-error" id="lockError" style="display:none">Not quite — try again.</p>
+  </div>
+
+  <div id="revealContent" style="display:none">
+    <div class="panel" id="explainer">
+      <h3>Variant 1: Second chances allowed</h3>
+      <p>In the classic problem, passing on an offer loses it forever. Here, you get a safety net: if nothing else works out, you can go back to your favorite — but there's a real chance it's gone by then.</p>
+      <p>A safety net means you can afford to be a little greedier. It's worth looking a bit longer than the classic 37% rule allows, because if it doesn't pay off, you might still recover your favorite. The less likely that recovery is to work, the closer the right strategy gets back to the classic rule.</p>
+      <ol class="steps-list">
+        <li>Look at the first 61% of startups without accepting anyone. Remember the best one.</li>
+        <li>Leap: after that, accept the first startup better than everything you've seen.</li>
+        <li>If you reach the end with nobody accepted, email the best one from your look phase back — and hope it's still open.</li>
+      </ol>
+      <div class="panel" style="background:var(--bg)">
+        <table style="width:100%;border-collapse:collapse;font-size:0.9rem">
+          <tr><th style="text-align:left;padding:0.3rem 0">Chance a second try works</th><th style="text-align:left;padding:0.3rem 0">Look until</th><th style="text-align:left;padding:0.3rem 0">Win rate</th></tr>
+          <tr><td style="padding:0.3rem 0">No second chances</td><td>37%</td><td>37%</td></tr>
+          <tr><td style="padding:0.3rem 0">50%</td><td>61%</td><td>61%</td></tr>
+        </table>
+      </div>
+      <p id="thisRoundNote" style="font-style:italic"></p>
+      <hr class="divider">
+      <h3>Now in code</h3>
+      <div class="code-block">
+        <pre><code id="codeBlock">def find_internship(startups, look_phase=6):
+    best_score_seen = 0
+    best_so_far = None
+
+    for i, startup in enumerate(startups):
+        if i < look_phase:
+            if startup.score > best_score_seen:
+                best_score_seen = startup.score
+                best_so_far = startup
+            continue
+
+        if startup.score > best_score_seen:
+            return startup            # accept!
+
+    # reached the end -- go back and hope it's still open
+    if random() < 0.5:
+        return best_so_far            # still open!
+    return None                       # gone -- no internship</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-foot">Optimal Stopping Variant 1 · Second chances allowed — inspired by <em>Algorithms to Live By</em>.</footer>
+</div>
+
+<script src="../../assets/lock-shared.js"></script>
+<script>
+const N = 10;
+const LOOK_PHASE = 6; // ~61% of 10
+const RECALL_SUCCESS_CHANCE = 0.5;
+const STARTUPS = [
+  "Kindlewick Labs", "Verdant AI", "Loopstack", "Cobalt Route",
+  "Fable & Ferrous", "Northlight Studio", "Basecamp Robotics", "Pinwheel Data",
+  "Harbor Nine", "Glasswing Health", "Trailmix Games", "Amberly Systems",
+];
+
+let round = [];
+let idx = 0;
+let bestSoFar = -Infinity;
+let bestIdxSoFar = null;
+let decided = false;
+
+const roundCounterEl = document.getElementById("roundCounter");
+const offerNameEl = document.getElementById("offerName");
+const offerBioEl = document.getElementById("offerBio");
+const offerScoreEl = document.getElementById("offerScore");
+const historyStripEl = document.getElementById("historyStrip");
+const decisionControlsEl = document.getElementById("decisionControls");
+const lastChanceNoteEl = document.getElementById("lastChanceNote");
+const acceptBtn = document.getElementById("acceptBtn");
+const passBtn = document.getElementById("passBtn");
+const resultBannerEl = document.getElementById("resultBanner");
+const resultsListEl = document.getElementById("resultsList");
+const playAgainControlsEl = document.getElementById("playAgainControls");
+const playAgainBtn = document.getElementById("playAgainBtn");
+
+const lock = initGameLock({
+  game: "secondchance",
+  lockPanelEl: document.getElementById("lockPanel"),
+  passwordInputEl: document.getElementById("passwordInput"),
+  unlockBtnEl: document.getElementById("unlockBtn"),
+  lockErrorEl: document.getElementById("lockError"),
+  contentEl: document.getElementById("revealContent"),
+  noteEl: document.getElementById("roundDoneNote"),
+});
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function uniqueScores(n) {
+  const set = new Set();
+  while (set.size < n) set.add(Math.floor(Math.random() * 98) + 1);
+  return Array.from(set);
+}
+
+function startRound() {
+  const names = shuffle(STARTUPS).slice(0, N);
+  const scores = shuffle(uniqueScores(N));
+  round = names.map((name, i) => ({ name, score: scores[i] }));
+  idx = 0;
+  bestSoFar = -Infinity;
+  bestIdxSoFar = null;
+  decided = false;
+
+  resultBannerEl.innerHTML = "";
+  resultsListEl.innerHTML = "";
+  playAgainControlsEl.style.display = "none";
+  document.getElementById("roundDoneNote").style.display = "none";
+  document.getElementById("lockPanel").style.display = "none";
+  document.getElementById("revealContent").style.display = "none";
+  decisionControlsEl.style.display = "flex";
+
+  render();
+}
+
+function render() {
+  const startup = round[idx];
+  roundCounterEl.textContent = `Startup ${idx + 1} of ${N}`;
+  offerNameEl.textContent = startup.name;
+  offerBioEl.textContent = idx < LOOK_PHASE ? "Still early — worth comparing before you commit." : "Past the look phase — the next great one is worth grabbing.";
+  offerScoreEl.textContent = startup.score;
+
+  if (startup.score > bestSoFar) {
+    bestSoFar = startup.score;
+    bestIdxSoFar = idx;
+  }
+
+  historyStripEl.innerHTML = "";
+  round.slice(0, idx + 1).forEach((s, i) => {
+    const chip = document.createElement("span");
+    chip.className = "history-chip" + (i === bestIdxSoFar ? " best-so-far" : "");
+    chip.textContent = s.score;
+    historyStripEl.appendChild(chip);
+  });
+
+  const isLast = idx === N - 1;
+  passBtn.textContent = isLast ? "🔄 Pass — email your favorite back" : "👋 Pass, see the next startup";
+  lastChanceNoteEl.style.display = isLast ? "block" : "none";
+}
+
+function accept() {
+  if (decided) return;
+  decided = true;
+  finishRound(idx, "direct");
+}
+
+function pass() {
+  if (decided) return;
+  if (idx >= N - 1) {
+    decided = true;
+    attemptRecall();
+    return;
+  }
+  idx += 1;
+  render();
+}
+
+function attemptRecall() {
+  const success = Math.random() < RECALL_SUCCESS_CHANCE;
+  if (success) {
+    finishRound(bestIdxSoFar, "recalled");
+  } else {
+    finishRound(null, "lost");
+  }
+}
+
+function finishRound(chosenIdx, mode) {
+  decisionControlsEl.style.display = "none";
+  lastChanceNoteEl.style.display = "none";
+
+  const trueBestScore = Math.max(...round.map((s) => s.score));
+  let message;
+
+  if (mode === "lost") {
+    message = `📭 You emailed ${round[bestIdxSoFar].name} back, but the role was already filled. No internship this round.`;
+    resultBannerEl.innerHTML = `<div class="result-banner wrong">${message}</div>`;
+  } else {
+    const chosenScore = round[chosenIdx].score;
+    const foundBest = chosenScore === trueBestScore;
+    const sortedDesc = round.map((s) => s.score).slice().sort((a, b) => b - a);
+    const rank = sortedDesc.indexOf(chosenScore) + 1;
+    const prefix = mode === "recalled" ? `🎉 They emailed back — you're in! ` : "";
+
+    if (foundBest) {
+      message = `${prefix}🏆 ${round[chosenIdx].name} really was the best offer of all ${N}.`;
+    } else if (rank <= 3) {
+      message = `${prefix}😊 Not bad — ${round[chosenIdx].name} was the #${rank} best offer out of ${N}.`;
+    } else {
+      message = `${prefix}😅 ${round[chosenIdx].name} was only the #${rank} best offer out of ${N}.`;
+    }
+    resultBannerEl.innerHTML = `<div class="result-banner ${foundBest ? "correct" : "wrong"}">${message}</div>`;
+  }
+
+  resultsListEl.innerHTML = "";
+  round.forEach((s, i) => {
+    const li = document.createElement("li");
+    li.className = "results-row" + (i === chosenIdx ? " chosen" : "");
+    const crown = s.score === trueBestScore ? " 👑" : "";
+    const mark = i === chosenIdx ? (mode === "recalled" ? " 🔄" : " ✅") : "";
+    li.innerHTML = `<span class="row-name">Startup ${i + 1}: ${s.name}${crown}${mark}</span><span class="row-score">${s.score}</span>`;
+    resultsListEl.appendChild(li);
+  });
+
+  playAgainControlsEl.style.display = "flex";
+  document.getElementById("thisRoundNote").textContent =
+    mode === "lost"
+      ? `This round: you looked through all ${N} without accepting, then the 50/50 recall on your favorite (score ${bestSoFar}) didn't pay off.`
+      : mode === "recalled"
+      ? `This round: you looked through all ${N}, then recalled your favorite (score ${bestSoFar}) and got lucky on the 50/50.`
+      : `This round: you accepted startup #${chosenIdx + 1} (score ${round[chosenIdx].score}). The look phase for this round was the first ${LOOK_PHASE} startups.`;
+
+  document.getElementById("roundDoneNote").style.display = lock.isUnlocked() ? "none" : "block";
+  lock.reveal();
+}
+
+acceptBtn.addEventListener("click", accept);
+passBtn.addEventListener("click", pass);
+playAgainBtn.addEventListener("click", startRound);
+
+startRound();
+</script>
+</body>
+</html>

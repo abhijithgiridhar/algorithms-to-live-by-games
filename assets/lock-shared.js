@@ -11,6 +11,8 @@ const GAME_LOCKS = {
   parking: { storageKey: "atlb_unlocked_parking_v1", password: "585" },
   selling: { storageKey: "atlb_unlocked_selling_v1", password: "991" },
   quitting: { storageKey: "atlb_unlocked_quitting_v1", password: "838" },
+  placements: { storageKey: "atlb_unlocked_placements_v1", password: "474" },
+  secondchance: { storageKey: "atlb_unlocked_secondchance_v1", password: "664" },
 };
 
 // opts: { game, lockPanelEl, passwordInputEl, unlockBtnEl, lockErrorEl, contentEl, noteEl }
