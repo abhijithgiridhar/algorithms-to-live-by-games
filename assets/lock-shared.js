@@ -14,6 +14,7 @@ const GAME_LOCKS = {
   placements: { storageKey: "atlb_unlocked_placements_v1", password: "474" },
   secondchance: { storageKey: "atlb_unlocked_secondchance_v1", password: "664" },
   arcade: { storageKey: "atlb_unlocked_arcade_v1", password: "203" },
+  arcadeChallenge: { storageKey: "atlb_unlocked_arcadechallenge_v1", password: "614" },
 };
 
 // opts: { game, lockPanelEl, passwordInputEl, unlockBtnEl, lockErrorEl, contentEl, noteEl }

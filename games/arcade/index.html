@@ -20,8 +20,25 @@
   <div class="start-screen" id="startScreen">
     <p style="font-size:1.05rem">You've got <strong>10 minutes</strong> and <strong>3 games</strong>: Dino Jump, Space Shooter, and Flappy Bird.</p>
     <p>Switch between them any time you like, as often as you like. Your score is the total across all three — try to end with as many points as possible.</p>
-    <p style="color:var(--muted);font-style:italic">Some games might be worth more points per minute than others... but you'll have to find that out for yourself.</p>
+    <p style="color:var(--muted);font-style:italic" id="modeHint">By default every game scores the same — just for fun. Your teacher can unlock Bandit Challenge mode below.</p>
     <input type="text" id="nameInput" placeholder="Your name">
+
+    <div class="panel" id="modeUnlockPanel" style="max-width:26rem;margin:1rem auto;text-align:center">
+      <p style="margin:0 0 0.6rem;font-size:0.9rem">🔒 Teacher: enter the password to unlock <strong>Bandit Challenge mode</strong> on this device.</p>
+      <div class="controls">
+        <input type="password" class="password-input" id="modePasswordInput" placeholder="Password">
+        <button class="btn secondary" id="modeUnlockBtn" type="button">Unlock</button>
+      </div>
+      <p class="lock-error" id="modeLockError" style="display:none">Not quite — try again.</p>
+    </div>
+
+    <div id="modeToggleRow" style="display:none;max-width:26rem;margin:1rem auto;text-align:center">
+      <label style="display:flex;align-items:center;gap:0.5rem;justify-content:center;font-size:0.95rem;cursor:pointer">
+        <input type="checkbox" id="hardModeToggle">
+        🎯 Play Bandit Challenge mode (hidden points, harder games)
+      </label>
+    </div>
+
     <div>
       <button class="btn" id="startBtn">Start my 10 minutes →</button>
     </div>
@@ -69,6 +86,8 @@
     <div class="controls">
       <button class="btn secondary" id="playAgainBtn">Play again →</button>
     </div>
+
+    <p class="write-down-note" id="freePlayNote" style="display:none">🎈 That was Free Play mode — every game scored the same, just for fun. Ask your teacher to unlock Bandit Challenge mode to play the real explore/exploit puzzle.</p>
 
     <p class="date-counter" id="roundDoneNote" style="display:none">Want to see why some games scored better? Ask your teacher for the password.</p>
 
@@ -121,6 +140,14 @@ const SESSION_SECONDS = 10 * 60;
 const RESULT_KEY = "atlb_arcade_result";
 const MAX_LIVES = 3;
 
+// base: everyone's default -- fair points, easygoing games, no puzzle.
+// hard: the "bandit challenge" -- hidden, unequal points and tougher games,
+// unlocked with a teacher password so it stays a deliberate exercise, not a default.
+const MODE_TUNING = {
+  base: { multipliers: { dino: 1, shooter: 1, flappy: 1 }, difficulty: "base" },
+  hard: { multipliers: { dino: 0.4, shooter: 1.0, flappy: 1.8 }, difficulty: "hard" },
+};
+
 let playerName = "";
 let totalScore = 0;
 let perGame = { dino: 0, shooter: 0, flappy: 0 };
@@ -128,6 +155,7 @@ let gameSeconds = { dino: 0, shooter: 0, flappy: 0 };
 let lives = { dino: MAX_LIVES, shooter: MAX_LIVES, flappy: MAX_LIVES };
 let runScore = { dino: 0, shooter: 0, flappy: 0 };
 let multipliers = {};
+let sessionMode = "base";
 let activeGame = null;
 let currentModule = null;
 let timeLeft = SESSION_SECONDS;
@@ -159,6 +187,18 @@ const lock = initGameLock({
   contentEl: document.getElementById("revealContent"),
   noteEl: document.getElementById("roundDoneNote"),
 });
+
+const modeLock = initGameLock({
+  game: "arcadeChallenge",
+  lockPanelEl: document.getElementById("modeUnlockPanel"),
+  passwordInputEl: document.getElementById("modePasswordInput"),
+  unlockBtnEl: document.getElementById("modeUnlockBtn"),
+  lockErrorEl: document.getElementById("modeLockError"),
+  contentEl: document.getElementById("modeToggleRow"),
+});
+modeLock.reveal();
+
+const hardModeToggle = document.getElementById("hardModeToggle");
 
 function formatTime(sec) {
   const m = Math.floor(sec / 60);
@@ -244,7 +284,7 @@ function switchTab(gameId) {
   }
 
   currentModule = GAMES[gameId].module();
-  currentModule.start(canvas, scoreCb, livesCb, lives[gameId]);
+  currentModule.start(canvas, scoreCb, livesCb, lives[gameId], MODE_TUNING[sessionMode].difficulty);
 }
 
 document.querySelectorAll(".arcade-tab").forEach((btn) => {
@@ -267,7 +307,8 @@ function startSession() {
   gameSeconds = { dino: 0, shooter: 0, flappy: 0 };
   lives = { dino: MAX_LIVES, shooter: MAX_LIVES, flappy: MAX_LIVES };
   runScore = { dino: 0, shooter: 0, flappy: 0 };
-  multipliers = { dino: 0.4, shooter: 1.0, flappy: 1.8 };
+  sessionMode = (modeLock.isUnlocked() && hardModeToggle.checked) ? "hard" : "base";
+  multipliers = MODE_TUNING[sessionMode].multipliers;
   timeLeft = SESSION_SECONDS;
 
   playerNameDisplay.textContent = playerName;
@@ -296,22 +337,38 @@ function renderEndScreen(result) {
     breakdownListEl.appendChild(row);
   });
 
-  document.getElementById("yourMultipliers").textContent =
-    `Your hidden multipliers this round: Dino Jump ×${result.multipliers.dino}, Space Shooter ×${result.multipliers.shooter}, Flappy Bird ×${result.multipliers.flappy}.`;
+  const mode = result.mode || (result.multipliers && result.multipliers.dino !== 1 ? "hard" : "base");
 
-  const rates = Object.keys(GAMES)
-    .filter((id) => result.gameSeconds[id] > 0)
-    .map((id) => result.perGame[id] / result.gameSeconds[id]);
-  const bestRate = rates.length ? Math.max(...rates) : 0;
-  const hypothetical = Math.round(bestRate * SESSION_SECONDS);
-  const gap = hypothetical - result.totalScore;
-  document.getElementById("regretExplain").textContent =
-    gap <= 3
-      ? `You barely left anything on the table — your final score of ${result.totalScore} is close to the ${hypothetical} you'd have gotten by spending the whole session on your best-scoring game. You found it fast!`
-      : `If you'd spent the full 10 minutes purely on your best-scoring game, you'd have scored around ${hypothetical}. Your actual score was ${result.totalScore} — that ${gap}-point gap is your regret, and it's the real cost of the time you spent exploring.`;
+  const freePlayNote = document.getElementById("freePlayNote");
+  const roundDoneNote = document.getElementById("roundDoneNote");
+  const lockPanel = document.getElementById("lockPanel");
+  const revealContent = document.getElementById("revealContent");
 
-  document.getElementById("roundDoneNote").style.display = lock.isUnlocked() ? "none" : "block";
-  lock.reveal();
+  if (mode === "base") {
+    freePlayNote.style.display = "block";
+    roundDoneNote.style.display = "none";
+    lockPanel.style.display = "none";
+    revealContent.style.display = "none";
+  } else {
+    freePlayNote.style.display = "none";
+
+    document.getElementById("yourMultipliers").textContent =
+      `Your hidden multipliers this round: Dino Jump ×${result.multipliers.dino}, Space Shooter ×${result.multipliers.shooter}, Flappy Bird ×${result.multipliers.flappy}.`;
+
+    const rates = Object.keys(GAMES)
+      .filter((id) => result.gameSeconds[id] > 0)
+      .map((id) => result.perGame[id] / result.gameSeconds[id]);
+    const bestRate = rates.length ? Math.max(...rates) : 0;
+    const hypothetical = Math.round(bestRate * SESSION_SECONDS);
+    const gap = hypothetical - result.totalScore;
+    document.getElementById("regretExplain").textContent =
+      gap <= 3
+        ? `You barely left anything on the table — your final score of ${result.totalScore} is close to the ${hypothetical} you'd have gotten by spending the whole session on your best-scoring game. You found it fast!`
+        : `If you'd spent the full 10 minutes purely on your best-scoring game, you'd have scored around ${hypothetical}. Your actual score was ${result.totalScore} — that ${gap}-point gap is your regret, and it's the real cost of the time you spent exploring.`;
+
+    roundDoneNote.style.display = lock.isUnlocked() ? "none" : "block";
+    lock.reveal();
+  }
 
   startScreen.style.display = "none";
   playScreen.style.display = "none";
@@ -323,7 +380,7 @@ function endSession() {
   timerId = null;
   stopCurrent();
 
-  const result = { playerName, totalScore, perGame, gameSeconds, multipliers };
+  const result = { playerName, totalScore, perGame, gameSeconds, multipliers, mode: sessionMode };
   localStorage.setItem(RESULT_KEY, JSON.stringify(result));
   renderEndScreen(result);
 }

@@ -5,8 +5,25 @@ window.ArcadeShooter = (function () {
   let keys = {};
   let pointerX = null;
   let hitFlash = 0;
+  let tuning;
 
   const W = 800, H = 500;
+
+  // base: the original, easygoing version everyone plays by default.
+  // hard: the "bandit challenge" tuning -- divers track and swarm harder, but
+  // never so hard that a careful player is locked out of scoring entirely.
+  const TUNING = {
+    base: {
+      diverStartTimer: 90, diverFloor: 48, diverSpawnK: 90,
+      diverBaseSpeed: 2.4, diverSpeedRamp: 1800, diverSpeedCap: 2.0,
+      homing: 0.02, padding: 3, pairChance: 0, pairAfter: Infinity,
+    },
+    hard: {
+      diverStartTimer: 70, diverFloor: 40, diverSpawnK: 120,
+      diverBaseSpeed: 3.0, diverSpeedRamp: 700, diverSpeedCap: 2.6,
+      homing: 0.035, padding: 6, pairChance: 0.25, pairAfter: 500,
+    },
+  };
 
   function reset(startingLives) {
     ship = { x: W / 2, w: 40, h: 24 };
@@ -15,7 +32,7 @@ window.ArcadeShooter = (function () {
     divers = [];
     fireTimer = 0;
     spawnTimer = 0;
-    diverTimer = 70;
+    diverTimer = tuning.diverStartTimer;
     elapsed = 0;
     hitFlash = 0;
     lives = startingLives;
@@ -27,10 +44,11 @@ window.ArcadeShooter = (function () {
   }
 
   function spawnDiver() {
-    divers.push({ x: Math.random() * W, y: -20, w: 24, h: 24, vy: 3.2 + Math.min(3.5, elapsed / 500) });
+    const vy = tuning.diverBaseSpeed + Math.min(tuning.diverSpeedCap, elapsed / tuning.diverSpeedRamp);
+    divers.push({ x: Math.random() * W, y: -20, w: 24, h: 24, vy });
     // once things have been going a while, sometimes send a second diver right behind the first
-    if (elapsed > 400 && Math.random() < 0.4) {
-      divers.push({ x: Math.random() * W, y: -70, w: 24, h: 24, vy: 3.2 + Math.min(3.5, elapsed / 500) });
+    if (elapsed > tuning.pairAfter && Math.random() < tuning.pairChance) {
+      divers.push({ x: Math.random() * W, y: -70, w: 24, h: 24, vy });
     }
   }
 
@@ -68,7 +86,7 @@ window.ArcadeShooter = (function () {
     diverTimer -= 1;
     if (diverTimer <= 0) {
       spawnDiver();
-      diverTimer = Math.max(32, 85 - elapsed / 120);
+      diverTimer = Math.max(tuning.diverFloor, tuning.diverSpawnK - elapsed / 120);
     }
 
     for (let i = bullets.length - 1; i >= 0; i--) {
@@ -94,12 +112,12 @@ window.ArcadeShooter = (function () {
       }
     }
 
-    const shipTop = H - 85, shipBottom = H - 40, shipLeft = ship.x - ship.w / 2 - 6, shipRight = ship.x + ship.w / 2 + 6;
+    const shipTop = H - 85, shipBottom = H - 40, shipLeft = ship.x - ship.w / 2 - tuning.padding, shipRight = ship.x + ship.w / 2 + tuning.padding;
     for (let i = divers.length - 1; i >= 0; i--) {
       const d = divers[i];
       d.y += d.vy;
-      // homes in hard on the ship's current x -- has to actually be dodged, not just outrun
-      d.x += (ship.x - d.x) * 0.05;
+      // homes in on the ship's current x -- has to actually be dodged, not just outrun
+      d.x += (ship.x - d.x) * tuning.homing;
 
       let hit = false;
       for (let j = bullets.length - 1; j >= 0; j--) {
@@ -171,7 +189,7 @@ window.ArcadeShooter = (function () {
   function pointerLeave() { pointerX = null; }
 
   return {
-    start(canvasEl, scoreCallback, livesCallback, initialLives) {
+    start(canvasEl, scoreCallback, livesCallback, initialLives, difficulty) {
       canvas = canvasEl;
       canvas.width = W;
       canvas.height = H;
@@ -180,6 +198,7 @@ window.ArcadeShooter = (function () {
       onLives = livesCallback;
       keys = {};
       pointerX = null;
+      tuning = TUNING[difficulty] || TUNING.base;
       reset(initialLives);
       running = true;
       window.addEventListener("keydown", keydown);
