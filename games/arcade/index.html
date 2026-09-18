@@ -86,7 +86,7 @@
     <div id="revealContent" style="display:none">
       <div class="panel" id="explainer" style="text-align:left">
         <h3>Chapter 2: Explore / Exploit</h3>
-        <p>Every one of these three games was secretly worth a <strong>different number of points per hit</strong> — and that multiplier was reshuffled for every single player. You had no way to know which was best except by actually playing all three.</p>
+        <p>Every one of these three games is secretly worth a <strong>different number of points per hit</strong> — the same for everyone in the room. You had no way to know which was best except by actually playing all three (or asking someone who already had).</p>
         <p>This is exactly the dilemma computer scientists call the <strong>multi-armed bandit problem</strong>: you have several options with unknown payoffs, limited time, and every minute spent testing one option is a minute not spent cashing in on whatever you already know works. Spend too long exploring, and you waste your remaining time on games you already knew weren't great. Commit too early, and you might be grinding the worst one the whole time.</p>
         <ol class="steps-list">
           <li><strong>Explore</strong> early — try all three games briefly to get a feel for which one is paying out best.</li>
@@ -159,15 +159,6 @@ const lock = initGameLock({
   contentEl: document.getElementById("revealContent"),
   noteEl: document.getElementById("roundDoneNote"),
 });
-
-function shuffle(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 function formatTime(sec) {
   const m = Math.floor(sec / 60);
@@ -276,8 +267,7 @@ function startSession() {
   gameSeconds = { dino: 0, shooter: 0, flappy: 0 };
   lives = { dino: MAX_LIVES, shooter: MAX_LIVES, flappy: MAX_LIVES };
   runScore = { dino: 0, shooter: 0, flappy: 0 };
-  const levels = shuffle([0.6, 1.0, 1.8]);
-  multipliers = { dino: levels[0], shooter: levels[1], flappy: levels[2] };
+  multipliers = { dino: 0.4, shooter: 1.0, flappy: 1.8 };
   timeLeft = SESSION_SECONDS;
 
   playerNameDisplay.textContent = playerName;
